@@ -21,7 +21,8 @@ __METANETX_URL = 'http://metanetx.org/cgi-bin/mnxget/mnxref/'
 
 
 def load(url, source=__METANETX_URL):
-    '''Loads MnxRef data from the chem_prop.tsv and reac_prop.tsv files.'''
+    '''Loads MnxRef data from the chem_prop.tsv, the chem_xref.tsv and
+    reac_prop.tsv files.'''
 
     # Contact Neo4j database, create Graph object:
     graph = grimoire.py2neo_utils.get_graph(url)
@@ -37,6 +38,8 @@ def load(url, source=__METANETX_URL):
             node.labels.add('Metabolite')
             graph.create(node)
             chem_prop_nodes[values[0]] = node
+
+    __read_xrefs(source, chem_prop_nodes)
 
     # Read reaction properties and create Nodes:
     equation_key = 'equation'
@@ -66,6 +69,18 @@ def load(url, source=__METANETX_URL):
 def __read_data(source, filename):
     '''Downloads and reads tab-limited files into lists of lists of strings.'''
     return list(csv.reader(urllib2.urlopen(source + filename), delimiter='\t'))
+
+
+def __read_xrefs(source, chem_prop_nodes):
+    '''Read chemical xrefs and update Nodes'''
+    chem_xref_keys = ['XREF', 'MNX_ID', 'Evidence', 'Description']
+
+    for values in __read_data(source, 'chem_xref.tsv'):
+        if not values[0].startswith('#'):
+            xrefs = dict(zip(chem_xref_keys, values))
+            xref = xrefs['XREF'].split(':')
+            node = chem_prop_nodes[xrefs['MNX_ID']]
+            node.properties[xref[0]] = xref[1]
 
 
 def __parse_equation(equation, separator):
