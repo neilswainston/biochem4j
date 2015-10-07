@@ -8,15 +8,16 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 @author:  neilswainston
 '''
 import sys
-import urllib
 import tempfile
+import urllib
 import zipfile
+
 import grimoire
 
 
-__NCBITAXONOMY_URL__ = 'ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdmp.zip'
+__NCBITAXONOMY_URL = 'ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdmp.zip'
 
-def load(url, source=__NCBITAXONOMY_URL__):
+def load(url, source=__NCBITAXONOMY_URL):
     '''Loads NCBI Taxonomy data.'''
 
     # Contact Neo4j database, create Graph object:

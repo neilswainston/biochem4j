@@ -15,7 +15,8 @@ import py2neo
 def get_graph(url):
     '''Contact Neo4j database, create and return Graph object.'''
     url_components = urlparse.urlparse(url)
-    py2neo.authenticate(url_components.hostname + ':' + str(url_components.port), \
-                 url_components.username, \
-                 url_components.password)
+    py2neo.authenticate(url_components.hostname + ':'
+                        + str(url_components.port),
+                        url_components.username,
+                        url_components.password)
     return py2neo.Graph(url + '/db/data/')
