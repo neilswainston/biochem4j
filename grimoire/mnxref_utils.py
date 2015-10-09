@@ -42,6 +42,8 @@ def load(url, source=__METANETX_URL):
     grimoire.py2neo_utils.create(graph, reac_nodes)
     grimoire.py2neo_utils.create(graph, reac_rels, 512)
 
+    return graph
+
 
 def __read_data(source, filename):
     '''Downloads and reads tab-limited files into lists of lists of strings.'''

@@ -26,3 +26,4 @@ def create(graph, entities, batch_size=2048):
     '''Creates multiple entities, limited by batch size.'''
     for i in xrange(0, len(entities), batch_size):
         graph.create(*entities[i:i+batch_size])
+        print str(i) + '\t' + str(len(entities))
