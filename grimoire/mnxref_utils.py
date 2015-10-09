@@ -28,17 +28,27 @@ def load(url, source=__METANETX_URL):
     # Contact Neo4j database, create Graph object:
     graph = grimoire.py2neo_utils.get_graph(url)
 
-    # Read data:
-    chem_nodes = __read_chem_prop(source, graph)
+    # Read chem data::
+    chem_nodes = __read_chem_prop(source)
     __read_chem_xref(source, chem_nodes)
-    __read_reac_prop(source, graph, chem_nodes)
+
+    # Submit chem data:
+    grimoire.py2neo_utils.create(graph, chem_nodes.values())
+
+    # Read reac data:
+    reac_nodes, reac_rels = __read_reac_prop(source, chem_nodes, graph)
+
+    # Submit reac data:
+    grimoire.py2neo_utils.create(graph, reac_nodes)
+    grimoire.py2neo_utils.create(graph, reac_rels, 512)
 
 
 def __read_data(source, filename):
     '''Downloads and reads tab-limited files into lists of lists of strings.'''
     return list(csv.reader(urllib2.urlopen(source + filename), delimiter='\t'))
 
-def __read_chem_prop(source, graph):
+
+def __read_chem_prop(source):
     '''Read chemical properties and create Nodes.'''
     chem_prop_keys = ['id', 'name', 'formula', 'charge', 'mass', 'inchi',
                       'smiles', 'source']
@@ -46,71 +56,63 @@ def __read_chem_prop(source, graph):
 
     for values in __read_data(source, 'chem_prop.tsv'):
         if not values[0].startswith('#'):
-            properties = dict(zip(chem_prop_keys, values))
-            results = graph.cypher.execute('MATCH (n:Metabolite) ' + 
-                                           'WHERE n.id = \'' + 
-                                           properties['id'] + '\' RETURN n')
-            if results:
-                node = results.one
-            else:
-                node = py2neo.Node.cast(properties)
-                node.labels.add('Metabolite')
-                graph.create(node)
-
+            node = py2neo.Node.cast(dict(zip(chem_prop_keys, values)))
+            node.labels.add('Metabolite')
             chem_nodes[values[0]] = node
 
     return chem_nodes
 
-def __read_chem_xref(source, chem_prop_nodes):
+
+def __read_chem_xref(source, chem_nodes):
     '''Read chemical xrefs and update Nodes.'''
     chem_xref_keys = ['XREF', 'MNX_ID', 'Evidence', 'Description']
 
     for values in __read_data(source, 'chem_xref.tsv'):
         if not values[0].startswith('#'):
-            try:
-                xrefs = dict(zip(chem_xref_keys, values))
-                xref = xrefs['XREF'].split(':')
-    
-                if xrefs['MNX_ID'] in chem_prop_nodes:
-                    node = chem_prop_nodes[xrefs['MNX_ID']]
-                    node.properties[xref[0]] = xref[1]
-                    node.push()
-            except (IndexError, KeyError, ValueError):
-                print traceback.print_exc()
+            xrefs = dict(zip(chem_xref_keys, values))
+            xref = xrefs['XREF'].split(':')
 
-def __read_reac_prop(source, graph, chem_nodes):
+            if xrefs['MNX_ID'] in chem_nodes:
+                node = chem_nodes[xrefs['MNX_ID']]
+                node.properties[xref[0]] = xref[1]
+
+
+def __read_reac_prop(source, chem_nodes, graph):
     '''Read reaction properties and create Nodes.'''
     equation_key = 'equation'
     reac_prop_keys = ['id', equation_key, 'description', 'balance', 'ec',
                       'Source']
 
+    reac_nodes = []
+    reac_rels = []
+
     for values in __read_data(source, 'reac_prop.tsv'):
         if not values[0].startswith('#'):
             try:
                 properties = dict(zip(reac_prop_keys, values))
-                results = graph.cypher.execute('MATCH (r:Reaction) ' + 
-                                               'WHERE r.id = \'' + 
-                                               properties['id'] + '\' RETURN n')
+                equation = properties.pop(equation_key)
+                participants = __parse_equation(equation, '=')
+                node = py2neo.Node.cast(properties)
+                node.labels.add('Reaction')
+                reac_nodes.append(node)
 
-                if not results:
-                    equation = properties.pop(equation_key)
-                    participants = __parse_equation(equation, '=')
-                    node = py2neo.Node.cast(properties)
-                    node.labels.add('Reaction')
-                    reaction = graph.create(node)
-
-                    for participant in participants:
-                        graph.create(py2neo.rel(reaction[0],
-                                                "HAS_REACTANT",
-                                                chem_nodes[participant[0]],
+                for participant in participants:
+                    target_chem_node = chem_nodes[participant[0]] \
+                        if participant[0] in chem_nodes \
+                        else __add_chem_node(participant[0], chem_nodes, graph)
+                    reac_rels.append(py2neo.rel(node, 'HAS_REACTANT',
+                                                target_chem_node,
                                                 stoichiometry=participant[1]))
 
             except (IndexError, KeyError, ValueError):
                 print traceback.print_exc()
 
+    return reac_nodes, reac_rels
+
+
 def __parse_equation(equation, separator):
     '''Parses chemical equation strings.'''
-    equation_terms = [re.split('\\s*\\+\\s*', equation_side)
+    equation_terms = [re.split('\\s+\\+\\s+', equation_side)
                       for equation_side in
                       re.split('\\s*' + separator + '\\s*', equation)]
 
@@ -130,7 +132,25 @@ def __add_reaction_participants(equation_term, stoich_factor, participants):
     for participant in equation_term:
         terms = participant.split()
         participants.append((participant, stoich_factor) if len(terms) == 1
-                            else (terms[1], stoich_factor * float(terms[0])))
+                            else (terms[1], __get_stoichiometry(stoich_factor,
+                                                                terms[0])))
+
+
+def __get_stoichiometry(stoich_factor, term):
+    '''Returns +/- term if term is numeric, else returns term as string,
+    catching non-specific stoichiometries such as (n+1).'''
+    try:
+        return stoich_factor * float(term)
+    except ValueError:
+        return term
+
+
+def __add_chem_node(chem_id, chem_nodes, graph):
+    '''Adds a Metabolite node with given id to the graph.'''
+    node = py2neo.Node('Metabolite', id=chem_id)
+    chem_nodes[chem_id] = node
+    graph.create(node)
+    return node
 
 
 def main(argv):

@@ -15,8 +15,14 @@ import py2neo
 def get_graph(url):
     '''Contact Neo4j database, create and return Graph object.'''
     url_components = urlparse.urlparse(url)
-    py2neo.authenticate(url_components.hostname + ':'
-                        + str(url_components.port),
+    py2neo.authenticate(url_components.hostname + ':' +
+                        str(url_components.port),
                         url_components.username,
                         url_components.password)
     return py2neo.Graph(url + '/db/data/')
+
+
+def create(graph, entities, batch_size=2048):
+    '''Creates multiple entities, limited by batch size.'''
+    for i in xrange(0, len(entities), batch_size):
+        graph.create(*entities[i:i+batch_size])
