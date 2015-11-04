@@ -17,11 +17,13 @@ import grimoire
 
 __NCBITAXONOMY_URL = 'ftp://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdmp.zip'
 
+
 def load(url, source=__NCBITAXONOMY_URL):
     '''Loads NCBI Taxonomy data.'''
 
     # Contact Neo4j database, create Graph object:
     graph = grimoire.py2neo_utils.get_graph(url)
+    print graph
 
     __get_ncbi_taxonomy_files__(source)
 
