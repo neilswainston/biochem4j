@@ -12,9 +12,9 @@ import traceback
 
 import py2neo
 
-import grimoire.py2neo_utils
 from synbiochem.design.mnxref import MnxRefReader
 from synbiochem.utils import chem_utils as chem_utils
+import grimoire.py2neo_utils
 
 
 def load(url):

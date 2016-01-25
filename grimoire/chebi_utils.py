@@ -10,10 +10,10 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 import math
 import sys
 
-import libchebipy
 import py2neo
 
 import grimoire
+import libchebipy
 
 
 def load(url):
@@ -27,7 +27,9 @@ def load(url):
     # Contact Neo4j database, create Graph object:
     graph = grimoire.py2neo_utils.get_graph(url)
     grimoire.py2neo_utils.create(graph, nodes.values())
-    grimoire.py2neo_utils.create(graph, rels, 8192)
+
+    print 'Rels: ' + str(len(rels))
+    grimoire.py2neo_utils.create(graph, rels, 256)
 
 
 def __add_node(chebi_id, nodes, rels):

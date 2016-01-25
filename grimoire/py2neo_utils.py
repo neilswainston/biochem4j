@@ -9,7 +9,11 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 '''
 import urlparse
 
+from py2neo.packages.httpstream import http
 import py2neo
+
+
+http.socket_timeout = 9999
 
 
 def get_graph(url):
@@ -19,13 +23,13 @@ def get_graph(url):
                         str(url_components.port),
                         url_components.username,
                         url_components.password)
-    return py2neo.Graph(url + '/db/data/')
+    return py2neo.Graph(url + 'db/data/')
 
 
 def create(graph, entities, batch_size=2048):
     '''Creates multiple entities, limited by batch size.'''
-    entities = [entity for entity in entities if not entity.bound()]
+    entities = [entity for entity in entities if not entity.bound]
 
     for i in xrange(0, len(entities), batch_size):
-        graph.create(*entities[i:i + batch_size])
+        graph.create(*entities[i:min(i + batch_size, len(entities))])
         print str(i) + '\t' + str(len(entities))
