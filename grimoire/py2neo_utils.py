@@ -23,10 +23,10 @@ def get_graph(url):
                         str(url_components.port),
                         url_components.username,
                         url_components.password)
-    return py2neo.Graph(url + 'db/data/')
+    return py2neo.Graph(url + '/db/data/')
 
 
-def create(graph, entities, batch_size=2048):
+def create(graph, entities, batch_size=1024):
     '''Creates multiple entities, limited by batch size.'''
     entities = [entity for entity in entities if not entity.bound]
 
