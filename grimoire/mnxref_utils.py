@@ -34,7 +34,7 @@ def load(url):
 
     # Submit reac data:
     grimoire.py2neo_utils.create(graph, reac_nodes)
-    grimoire.py2neo_utils.create(graph, reac_rels, 512)
+    grimoire.py2neo_utils.create(graph, reac_rels, 256)
 
     return graph
 
