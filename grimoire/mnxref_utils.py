@@ -20,15 +20,14 @@ import grimoire.py2neo_utils
 def load(url):
     '''Loads MnxRef data from the chem_prop.tsv, the chem_xref.tsv and
     reac_prop.tsv files.'''
-
-    # Contact Neo4j database, create Graph object:
-    graph = grimoire.py2neo_utils.get_graph(url)
-
     # Read mnxref data and generate nodes:
     reader = MnxRefReader()
     chem_nodes = __get_chem_nodes(reader.get_chem_data())
     reac_nodes, reac_rels = __get_reac_nodes(reader.get_reac_data(),
                                              chem_nodes)
+
+    # Contact Neo4j database, create Graph object:
+    graph = grimoire.py2neo_utils.get_graph(url)
 
     # Submit chem data:
     grimoire.py2neo_utils.create(graph, chem_nodes.values())
