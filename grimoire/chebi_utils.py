@@ -58,6 +58,14 @@ def __add_node(chebi_id, nodes, rels):
         properties['inchi'] = entity.get_inchi()
         properties['smiles'] = entity.get_smiles()
 
+        properties[grimoire.CHEBI] = entity.get_id()
+
+        for db_acc in entity.get_database_accessions():
+            namespace = grimoire.resolve_namespace(db_acc.get_type())
+
+            if namespace is not None:
+                properties[namespace] = db_acc.get_accession_number()
+
         node = py2neo.Node.cast(properties)
         node.labels.add('Chemical')
         nodes[chebi_id] = node
