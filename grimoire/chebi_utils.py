@@ -10,10 +10,11 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 import math
 import sys
 
+import libchebipy
 import py2neo
 
+from synbiochem.utils import chem_utils
 import grimoire
-import libchebipy
 
 
 def load(url):
@@ -26,7 +27,7 @@ def load(url):
 
     # Contact Neo4j database, create Graph object:
     graph = grimoire.py2neo_utils.get_graph(url)
-    grimoire.py2neo_utils.create(graph, nodes.values())
+    grimoire.py2neo_utils.create(graph, nodes.values(), 512)
 
     print 'Rels: ' + str(len(rels))
     grimoire.py2neo_utils.create(graph, rels, 256)
@@ -40,12 +41,19 @@ def __add_node(chebi_id, nodes, rels):
 
         properties['id'] = entity.get_id()
         properties['name'] = entity.get_name()
+        properties['names'] = [name.get_name() for name in entity.get_names()]
         properties['formula'] = entity.get_formula()
         properties['charge'] = 0 if math.isnan(entity.get_charge()) \
             else entity.get_charge()
 
         if not math.isnan(entity.get_mass()):
-            properties['mass'] = entity.get_mass()
+            properties['average_mass'] = entity.get_mass()
+
+        if properties['formula'] is not None:
+            mono_mass = chem_utils.get_molecular_mass(properties['formula'])
+
+            if not math.isnan(mono_mass):
+                properties['monoisotopic_mass'] = mono_mass
 
         properties['inchi'] = entity.get_inchi()
         properties['smiles'] = entity.get_smiles()
