@@ -1,7 +1,7 @@
 '''
-Grimoire (c) University of Manchester 2015
+SYNBIOCHEM-DB (c) University of Manchester 2015
 
-Grimoire is licensed under the MIT License.
+SYNBIOCHEM-DB is licensed under the MIT License.
 
 To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 
@@ -15,7 +15,7 @@ import urllib
 
 import py2neo
 
-import grimoire
+import sbcdb
 
 
 __NCBITAXONOMY_URL = 'ftp://ftp.ncbi.nih.gov/pub/taxonomy/taxdump.tar.gz'
@@ -29,7 +29,7 @@ def load(url, source=__NCBITAXONOMY_URL):
     __parse_names(data, names_filename)
 
     # Contact Neo4j database, create Graph object:
-    graph = grimoire.py2neo_utils.get_graph(url)
+    graph = sbcdb.py2neo_utils.get_graph(url)
     __submit(graph, data)
 
 
@@ -99,8 +99,8 @@ def __submit(graph, data):
         if node_id != '1':
             rels.append(py2neo.rel(node, 'is_a', nodes[parent_id]))
 
-    grimoire.py2neo_utils.create(graph, nodes.values())
-    grimoire.py2neo_utils.create(graph, rels, 256)
+    sbcdb.py2neo_utils.create(graph, nodes.values())
+    sbcdb.py2neo_utils.create(graph, rels, 256)
 
 
 def main(argv):

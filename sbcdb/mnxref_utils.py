@@ -1,7 +1,7 @@
 '''
-Grimoire (c) University of Manchester 2015
+SYNBIOCHEM-DB (c) University of Manchester 2015
 
-Grimoire is licensed under the MIT License.
+SYNBIOCHEM-DB is licensed under the MIT License.
 
 To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 
@@ -14,7 +14,7 @@ import py2neo
 
 from synbiochem.design.mnxref import MnxRefReader
 from synbiochem.utils import chem_utils as chem_utils
-import grimoire.py2neo_utils
+import sbcdb
 
 
 def load(url):
@@ -27,14 +27,14 @@ def load(url):
                                              chem_nodes)
 
     # Contact Neo4j database, create Graph object:
-    graph = grimoire.py2neo_utils.get_graph(url)
+    graph = sbcdb.py2neo_utils.get_graph(url)
 
     # Submit chem data:
-    grimoire.py2neo_utils.create(graph, chem_nodes.values())
+    sbcdb.py2neo_utils.create(graph, chem_nodes.values())
 
     # Submit reac data:
-    grimoire.py2neo_utils.create(graph, reac_nodes)
-    grimoire.py2neo_utils.create(graph, reac_rels, 256)
+    sbcdb.py2neo_utils.create(graph, reac_nodes)
+    sbcdb.py2neo_utils.create(graph, reac_rels, 256)
 
     return graph
 

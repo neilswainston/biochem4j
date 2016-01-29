@@ -1,7 +1,7 @@
 '''
-Grimoire (c) University of Manchester 2015
+SYNBIOCHEM-DB (c) University of Manchester 2015
 
-Grimoire is licensed under the MIT License.
+SYNBIOCHEM-DB is licensed under the MIT License.
 
 To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 
@@ -14,7 +14,8 @@ import libchebipy
 import py2neo
 
 from synbiochem.utils import chem_utils
-import grimoire
+import sbcdb
+import synbiochem.design
 
 
 def load(url):
@@ -26,11 +27,9 @@ def load(url):
     __add_node('CHEBI:24431', nodes, rels)
 
     # Contact Neo4j database, create Graph object:
-    graph = grimoire.py2neo_utils.get_graph(url)
-    grimoire.py2neo_utils.create(graph, nodes.values(), 512)
-
-    print 'Rels: ' + str(len(rels))
-    grimoire.py2neo_utils.create(graph, rels, 256)
+    graph = sbcdb.py2neo_utils.get_graph(url)
+    sbcdb.py2neo_utils.create(graph, nodes.values(), 512)
+    sbcdb.py2neo_utils.create(graph, rels, 256)
 
 
 def __add_node(chebi_id, nodes, rels):
@@ -57,11 +56,11 @@ def __add_node(chebi_id, nodes, rels):
 
         properties['inchi'] = entity.get_inchi()
         properties['smiles'] = entity.get_smiles()
-
-        properties[grimoire.CHEBI] = entity.get_id()
+        properties['chebi'] = entity.get_id()
 
         for db_acc in entity.get_database_accessions():
-            namespace = grimoire.resolve_namespace(db_acc.get_type())
+            namespace = synbiochem.design.resolve_namespace(db_acc.get_type(),
+                                                            True)
 
             if namespace is not None:
                 properties[namespace] = db_acc.get_accession_number()
