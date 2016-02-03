@@ -20,17 +20,20 @@ import sbcdb
 def load(url):
     '''Loads MnxRef data from the chem_prop.tsv, the chem_xref.tsv and
     reac_prop.tsv files.'''
-    # Read mnxref data and generate nodes:
-    reader = MnxRefReader()
-    chem_nodes = __get_chem_nodes(reader.get_chem_data())
-    reac_nodes, reac_rels = __get_reac_nodes(reader.get_reac_data(),
-                                             chem_nodes)
-
     # Contact Neo4j database, create Graph object:
     graph = sbcdb.py2neo_utils.get_graph(url)
 
+    # Read mnxref data and generate nodes:
+    reader = MnxRefReader()
+    chem_nodes = __get_chem_nodes(reader.get_chem_data())
+
     # Submit chem data:
-    sbcdb.py2neo_utils.create(graph, chem_nodes.values())
+    chem_nodes = sbcdb.py2neo_utils.create(graph, chem_nodes,
+                                           match_criteria=[('Chemical',
+                                                            'chebi')])
+
+    reac_nodes, reac_rels = __get_reac_nodes(reader.get_reac_data(),
+                                             chem_nodes)
 
     # Submit reac data:
     sbcdb.py2neo_utils.create(graph, reac_nodes)
@@ -51,23 +54,23 @@ def __get_chem_nodes(chem_data):
 
 def __get_reac_nodes(reac_data, chem_nodes):
     '''Get reaction nodes from data.'''
-    reac_nodes = []
-    reac_rels = []
+    reac_nodes = {}
+    reac_rels = {}
 
     for properties in reac_data.values():
         try:
             node = py2neo.Node.cast(properties)
             node.labels.add('Reaction')
-            reac_nodes.append(node)
+            reac_nodes[properties['id']] = node
 
             for prt in chem_utils.parse_equation(properties.pop('equation')):
                 target_chem_node = chem_nodes[prt[0]] \
                     if prt[0] in chem_nodes \
                     else __add_chem_node({'id': prt[0]}, chem_nodes)
 
-                reac_rels.append(py2neo.rel(node, 'HAS_REACTANT',
-                                            target_chem_node,
-                                            stoichiometry=prt[1]))
+                reac_rels[len(reac_rels)] = (py2neo.rel(node, 'HAS_REACTANT',
+                                                        target_chem_node,
+                                                        stoichiometry=prt[1]))
         except ValueError:
             print traceback.print_exc()
 
@@ -75,9 +78,9 @@ def __get_reac_nodes(reac_data, chem_nodes):
 
 
 def __add_chem_node(properties, chem_nodes):
-    '''Adds a Metabolite node with given id to the graph.'''
+    '''Adds a Chemical node with given id to the graph.'''
     node = py2neo.Node.cast(properties)
-    node.labels.add('Metabolite')
+    node.labels.add('Chemical')
     chem_nodes[properties['id']] = node
     return node
 

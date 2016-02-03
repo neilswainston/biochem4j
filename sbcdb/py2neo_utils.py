@@ -26,10 +26,35 @@ def get_graph(url):
     return py2neo.Graph(url + '/db/data/')
 
 
-def create(graph, entities, batch_size=1024):
+def create(graph, entities, batch_size=1024, match_criteria=None):
     '''Creates multiple entities, limited by batch size.'''
-    entities = [entity for entity in entities if not entity.bound]
+    unbound = []
 
-    for i in xrange(0, len(entities), batch_size):
-        graph.create(*entities[i:min(i + batch_size, len(entities))])
-        print str(i) + '\t' + str(len(entities))
+    if match_criteria is not None:
+        for key, entity in entities.iteritems():
+            for value in match_criteria:
+                if entity[value[1]] is not None:
+                    bound = find_one(graph, value[0], value[1],
+                                     entity[value[1]])
+
+                    if bound is not None:
+                        entities[key] = bound
+                        break
+
+            if not entities[key].bound:
+                entities[key] = entity
+                unbound.append(entity)
+    else:
+        unbound = entities.values()
+
+    for i in xrange(0, len(unbound), batch_size):
+        graph.create(*unbound[i:min(i + batch_size, len(entities))])
+        print str(i) + '\t' + str(len(unbound))
+
+    return entities
+
+
+def find_one(graph, label, property_key, property_value):
+    '''Finds a single node constraint by label, property_key and
+    property_value.'''
+    return graph.find_one(label, property_key, property_value)

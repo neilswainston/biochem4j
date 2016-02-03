@@ -8,6 +8,7 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 @author:  neilswainston
 '''
 import sys
+
 from sbcdb import chebi_utils, mnxref_utils
 
 

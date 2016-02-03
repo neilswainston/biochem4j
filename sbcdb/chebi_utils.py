@@ -13,23 +13,23 @@ import sys
 import libchebipy
 import py2neo
 
+from sbcdb import py2neo_utils
 from synbiochem.utils import chem_utils
-import sbcdb
 import synbiochem.design
 
 
 def load(url):
     '''Loads ChEBI data from libChEBIpy.'''
     nodes = {}
-    rels = []
+    rels = {}
 
     # Add root, applying recursion:
     __add_node('CHEBI:24431', nodes, rels)
 
     # Contact Neo4j database, create Graph object:
-    graph = sbcdb.py2neo_utils.get_graph(url)
-    sbcdb.py2neo_utils.create(graph, nodes.values(), 512)
-    sbcdb.py2neo_utils.create(graph, rels, 256)
+    graph = py2neo_utils.get_graph(url)
+    py2neo_utils.create(graph, nodes, 512)
+    py2neo_utils.create(graph, rels, 256)
 
 
 def __add_node(chebi_id, nodes, rels):
@@ -72,7 +72,8 @@ def __add_node(chebi_id, nodes, rels):
         for incoming in entity.get_incomings():
             target_id = incoming.get_target_chebi_id()
             target_node = __add_node(target_id, nodes, rels)
-            rels.append(py2neo.rel(target_node, incoming.get_type(), node))
+            rels[len(rels)] = py2neo.rel(target_node, incoming.get_type(),
+                                         node)
     else:
         node = nodes[chebi_id]
 
