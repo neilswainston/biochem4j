@@ -14,7 +14,7 @@ import libchebipy
 import py2neo
 
 from sbcdb import py2neo_utils
-from synbiochem.utils import chem_utils
+import sbcdb
 import synbiochem.design
 
 
@@ -45,15 +45,6 @@ def __add_node(chebi_id, nodes, rels):
         properties['charge'] = 0 if math.isnan(entity.get_charge()) \
             else entity.get_charge()
 
-        if not math.isnan(entity.get_mass()):
-            properties['average_mass'] = entity.get_mass()
-
-        if properties['formula'] is not None:
-            mono_mass = chem_utils.get_molecular_mass(properties['formula'])
-
-            if not math.isnan(mono_mass):
-                properties['monoisotopic_mass'] = mono_mass
-
         properties['inchi'] = entity.get_inchi()
         properties['smiles'] = entity.get_smiles()
         properties['chebi'] = entity.get_id()
@@ -64,6 +55,8 @@ def __add_node(chebi_id, nodes, rels):
 
             if namespace is not None:
                 properties[namespace] = db_acc.get_accession_number()
+
+        sbcdb.normalise_masses(properties)
 
         node = py2neo.Node.cast(properties)
         node.labels.add('Chemical')

@@ -10,6 +10,7 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 import sys
 import traceback
 
+import libchebipy
 import py2neo
 
 from synbiochem.design.mnxref import MnxRefReader
@@ -79,6 +80,12 @@ def __get_reac_nodes(reac_data, chem_nodes):
 
 def __add_chem_node(properties, chem_nodes):
     '''Adds a Chemical node with given id to the graph.'''
+    if 'chebi' in properties:
+        chebi_entity = libchebipy.ChebiEntity(properties['chebi'])
+        properties['chebi'] = chebi_entity.get_parent_id()
+
+    sbcdb.normalise_masses(properties)
+
     node = py2neo.Node.cast(properties)
     node.labels.add('Chemical')
     chem_nodes[properties['id']] = node

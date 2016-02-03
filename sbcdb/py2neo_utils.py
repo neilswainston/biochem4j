@@ -38,6 +38,11 @@ def create(graph, entities, batch_size=1024, match_criteria=None):
                                      entity[value[1]])
 
                     if bound is not None:
+                        for prop in entity.properties:
+                            if bound[prop] is None:
+                                bound[prop] = entity[prop]
+                                bound.push()
+
                         entities[key] = bound
                         break
 
