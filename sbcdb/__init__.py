@@ -25,7 +25,7 @@ def normalise_masses(properties):
     formula.'''
     properties.pop('mass', None)
 
-    if 'formula' in properties:
+    if 'formula' in properties and properties['formula'] is not None:
         mono_mass = chem_utils.get_molecular_mass(properties['formula'])
 
         if not math.isnan(mono_mass):

@@ -56,8 +56,6 @@ def create(graph, entities, batch_size=1024, match_criteria=None):
         graph.create(*unbound[i:min(i + batch_size, len(entities))])
         print str(i) + '\t' + str(len(unbound))
 
-    return entities
-
 
 def find_one(graph, label, property_key, property_value):
     '''Finds a single node constraint by label, property_key and

@@ -56,24 +56,29 @@ def __submit(graph, data):
     '''Submit data to the graph.'''
     rhea_nodes = {}
     uniprot_nodes = {}
-    rels = []
+    rels = {}
 
-    # Create nodes:
-    for rhea_id, uniprot_id in data.iteritems():
+    # Create / find Reaction nodes:
+    for rhea_id in data:
         if rhea_id not in rhea_nodes:
             rhea_node = py2neo.Node.cast(
                 {'id': 'rhea:' + rhea_id, 'rhea': rhea_id})
             rhea_node.labels.add('Reaction')
             rhea_nodes[rhea_id] = rhea_node
 
+    sbcdb.py2neo_utils.create(graph, rhea_nodes, match_criteria=[('Reaction',
+                                                                  'rhea')])
+
+    # Create Enzyme nodes and relationships:
+    for rhea_id, uniprot_id in data.iteritems():
         if uniprot_id not in uniprot_nodes:
             uniprot_node = py2neo.Node.cast({'id': uniprot_id})
             uniprot_node.labels.add('Enzyme')
             uniprot_nodes[uniprot_id] = uniprot_node
 
-        rels.append(py2neo.rel(rhea_nodes[rhea_id],
-                               'catalysed_by',
-                               uniprot_nodes[uniprot_id]))
+        rels[len(rels)] = py2neo.rel(rhea_nodes[rhea_id], 'catalysed_by',
+                                     uniprot_nodes[uniprot_id],
+                                     source='rhea')
 
     # Get Uniprot details:
     fields = ['entry name', 'protein names', 'organism-id']
@@ -81,10 +86,12 @@ def __submit(graph, data):
                                                        fields)
 
     for uniprot_id, uniprot_value in uniprot_values.iteritems():
-        uniprot_node[uniprot_id].properties.expand(uniprot_value)
+        uniprot_value.pop('Entry')
 
-    sbcdb.py2neo_utils.create(graph, rhea_nodes.values())
-    sbcdb.py2neo_utils.create(graph, uniprot_nodes.values())
+        for key, value in uniprot_value.iteritems():
+            uniprot_nodes[uniprot_id][key] = value
+
+    sbcdb.py2neo_utils.create(graph, uniprot_nodes)
     sbcdb.py2neo_utils.create(graph, rels, 256)
 
 

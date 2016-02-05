@@ -29,9 +29,8 @@ def load(url):
     chem_nodes = __get_chem_nodes(reader.get_chem_data())
 
     # Submit chem data:
-    chem_nodes = sbcdb.py2neo_utils.create(graph, chem_nodes,
-                                           match_criteria=[('Chemical',
-                                                            'chebi')])
+    sbcdb.py2neo_utils.create(graph, chem_nodes, match_criteria=[('Chemical',
+                                                                  'chebi')])
 
     reac_nodes, reac_rels = __get_reac_nodes(reader.get_reac_data(),
                                              chem_nodes)
@@ -69,7 +68,7 @@ def __get_reac_nodes(reac_data, chem_nodes):
                     if prt[0] in chem_nodes \
                     else __add_chem_node({'id': prt[0]}, chem_nodes)
 
-                reac_rels[len(reac_rels)] = (py2neo.rel(node, 'HAS_REACTANT',
+                reac_rels[len(reac_rels)] = (py2neo.rel(node, 'has_reactant',
                                                         target_chem_node,
                                                         stoichiometry=prt[1]))
         except ValueError:

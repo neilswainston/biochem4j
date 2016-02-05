@@ -79,7 +79,7 @@ def __parse_names(data, filename):
 def __submit(graph, data):
     '''Submit data to the graph.'''
     nodes = {}
-    rels = []
+    rels = {}
 
     # Create nodes:
     for node_id, properties in data.iteritems():
@@ -97,9 +97,9 @@ def __submit(graph, data):
         parent_id = node.properties.pop('parent_id')
 
         if node_id != '1':
-            rels.append(py2neo.rel(node, 'is_a', nodes[parent_id]))
+            rels[len(rels)] = py2neo.rel(node, 'is_a', nodes[parent_id])
 
-    sbcdb.py2neo_utils.create(graph, nodes.values())
+    sbcdb.py2neo_utils.create(graph, nodes)
     sbcdb.py2neo_utils.create(graph, rels, 256)
 
 
