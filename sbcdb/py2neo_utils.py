@@ -26,12 +26,17 @@ def get_graph(url):
     return py2neo.Graph(url + '/db/data/')
 
 
-def create(graph, entities, batch_size=1024, match_criteria=None):
+def create(graph, entities, batch_size=1024, verbose=False,
+           match_criteria=None):
     '''Creates multiple entities, limited by batch size.'''
     unbound = []
 
     if match_criteria is not None:
         for key, entity in entities.iteritems():
+
+            if verbose:
+                print 'py2neo_utils: Checking ' + key
+
             for value in match_criteria:
                 if entity[value[1]] is not None:
                     bound = find_one(graph, value[0], value[1],
@@ -54,7 +59,10 @@ def create(graph, entities, batch_size=1024, match_criteria=None):
 
     for i in xrange(0, len(unbound), batch_size):
         graph.create(*unbound[i:min(i + batch_size, len(entities))])
-        print str(i) + '\t' + str(len(unbound))
+
+        if verbose:
+            print 'py2neo_utils: Creating entry ' + str(i) + ' of ' + \
+                str(len(unbound))
 
 
 def find_one(graph, label, property_key, property_value):

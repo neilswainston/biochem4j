@@ -10,14 +10,16 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 import math
 import sys
 
-from sbcdb import chebi_utils, mnxref_utils
+from sbcdb import chebi_utils, kegg_utils, mnxref_utils, rhea_utils
 from synbiochem.utils import chem_utils
 
 
-def load(url):
+def load(url, organisms=None):
     '''Loads data into neo4j from a number of sources.'''
-    chebi_utils.load(url)
+    # chebi_utils.load(url)
     mnxref_utils.load(url)
+    rhea_utils.load(url)
+    kegg_utils.load(url, organisms)
 
 
 def normalise_masses(properties):
@@ -36,6 +38,5 @@ def main(argv):
     '''main method'''
     load(*argv)
 
-
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    main([sys.argv[1], sys.argv[2:]])

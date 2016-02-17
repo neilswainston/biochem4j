@@ -35,10 +35,10 @@ def load(url):
 def __add_node(chebi_id, nodes, rels):
     '''Constructs a node from libChEBI.'''
     if chebi_id not in nodes:
-        properties = {}
         entity = libchebipy.ChebiEntity(chebi_id)
 
-        properties['id'] = entity.get_id()
+        properties = {}
+        properties['chebi'] = entity.get_id()
         properties['name'] = entity.get_name()
         properties['names'] = [name.get_name() for name in entity.get_names()]
         properties['formula'] = entity.get_formula()
@@ -47,7 +47,6 @@ def __add_node(chebi_id, nodes, rels):
 
         properties['inchi'] = entity.get_inchi()
         properties['smiles'] = entity.get_smiles()
-        properties['chebi'] = entity.get_id()
 
         for db_acc in entity.get_database_accessions():
             namespace = synbiochem.design.resolve_namespace(db_acc.get_type(),
@@ -58,15 +57,14 @@ def __add_node(chebi_id, nodes, rels):
 
         sbcdb.normalise_masses(properties)
 
-        node = py2neo.Node.cast(properties)
-        node.labels.add('Chemical')
+        node = py2neo.Node.cast('Chemical', properties)
         nodes[chebi_id] = node
 
         for incoming in entity.get_incomings():
             target_id = incoming.get_target_chebi_id()
             target_node = __add_node(target_id, nodes, rels)
             rels[len(rels)] = py2neo.rel(target_node, incoming.get_type(),
-                                         node)
+                                         node, source='chebi')
     else:
         node = nodes[chebi_id]
 
