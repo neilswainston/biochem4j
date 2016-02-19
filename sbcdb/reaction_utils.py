@@ -26,12 +26,12 @@ def submit(graph, data, source):
 
     # Submit to neo4j:
     sbcdb.py2neo_utils.create(
-        graph, reac_nodes, match_criteria=[('Reaction', source)])
-    sbcdb.py2neo_utils.create(
-        graph, enzyme_nodes, match_criteria=[('Enzyme', 'uniprot')])
-    sbcdb.py2neo_utils.create(
-        graph, organism_nodes, match_criteria=[('Organism', 'taxonomy')])
-    sbcdb.py2neo_utils.create(graph, rels, 256)
+        graph, reac_nodes, verbose=True, match_criteria=[('Reaction', source)])
+    sbcdb.py2neo_utils.create(graph, enzyme_nodes, verbose=True,
+                              match_criteria=[('Enzyme', 'uniprot')])
+    sbcdb.py2neo_utils.create(graph, organism_nodes, verbose=True,
+                              match_criteria=[('Organism', 'taxonomy')])
+    sbcdb.py2neo_utils.create(graph, rels, verbose=True, batch_size=256)
 
 
 def __create_reac_nodes(data, source):

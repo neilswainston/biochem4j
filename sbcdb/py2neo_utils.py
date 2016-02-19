@@ -31,11 +31,10 @@ def create(graph, entities, batch_size=1024, verbose=False,
     '''Creates multiple entities, limited by batch size.'''
     unbound = []
 
-    if match_criteria is not None:
+    if __check_match_criteria(graph, match_criteria):
         for key, entity in entities.iteritems():
-
             if verbose:
-                print 'py2neo_utils: Checking ' + key
+                print 'py2neo_utils: Checking ' + str(entity)
 
             for value in match_criteria:
                 if entity[value[1]] is not None:
@@ -57,15 +56,34 @@ def create(graph, entities, batch_size=1024, verbose=False,
     else:
         unbound = entities.values()
 
-    for i in xrange(0, len(unbound), batch_size):
-        graph.create(*unbound[i:min(i + batch_size, len(entities))])
-
-        if verbose:
-            print 'py2neo_utils: Creating entry ' + str(i) + ' of ' + \
-                str(len(unbound))
+    __create(graph, unbound, batch_size, verbose)
 
 
 def find_one(graph, label, property_key, property_value):
     '''Finds a single node constraint by label, property_key and
     property_value.'''
     return graph.find_one(label, property_key, property_value)
+
+
+def __check_match_criteria(graph, match_criteria):
+    ''''Check to see if any nodes of this Label exist.'''
+    if match_criteria is not None:
+        for value in match_criteria:
+            result = graph.cypher.execute('MATCH (n:' + value[0] + ') ' +
+                                          'WHERE HAS (n.' + value[1] + ') ' +
+                                          'RETURN COUNT(n)')
+
+            if result.one == 0:
+                match_criteria.remove(value)
+
+    return match_criteria is not None and len(match_criteria) > 0
+
+
+def __create(graph, unbound, batch_size, verbose=False):
+    '''Creates unbound nodes.'''
+    for i in xrange(0, len(unbound), batch_size):
+        graph.create(*unbound[i:min(i + batch_size, len(unbound))])
+
+        if verbose:
+            print 'py2neo_utils: Creating entry ' + str(i) + ' of ' + \
+                str(len(unbound))
