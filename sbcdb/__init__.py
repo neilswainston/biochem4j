@@ -7,12 +7,16 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 
 @author:  neilswainston
 '''
+from collections import Iterable
+import csv
 import math
 import subprocess
 import sys
+import tempfile
 
-from sbcdb import ncbi_taxonomy_utils
+from sbcdb import chebi_utils, ncbi_taxonomy_utils
 from synbiochem.utils import chem_utils
+
 
 __PTH = '/Applications/Neo4j Community Edition.app/Contents/Resources/app/bin/'
 
@@ -20,8 +24,39 @@ __PTH = '/Applications/Neo4j Community Edition.app/Contents/Resources/app/bin/'
 def load(db_loc):
     '''Loads data into neo4j from a number of sources.'''
     files = []
+    files.append(chebi_utils.load())
     files.append(ncbi_taxonomy_utils.load())
     __create_db(db_loc, files)
+
+
+def write_nodes(nodes):
+    '''Writes Nodes to csv file.'''
+    fle = tempfile.NamedTemporaryFile(delete=False)
+
+    nodes = [{key: __get_value(value) for key, value in node.iteritems()}
+             for node in nodes]
+
+    with open(fle.name, 'w') as node_file:
+        dict_writer = csv.DictWriter(
+            node_file, list(set().union(*(d.keys() for d in nodes))),
+            restval=None)
+        dict_writer.writeheader()
+        dict_writer.writerows(nodes)
+
+    return fle.name
+
+
+def write_rels(rels):
+    '''Writes Relationships to csv file.'''
+    fle = tempfile.NamedTemporaryFile(delete=False)
+
+    with open(fle.name, 'w') as textfile:
+        textfile.write(':START_ID,:TYPE,:END_ID\n')
+
+        for rel in rels:
+            textfile.write(','.join(rel) + '\n')
+
+    return fle.name
 
 
 def normalise_masses(properties):
@@ -34,6 +69,13 @@ def normalise_masses(properties):
 
         if not math.isnan(mono_mass):
             properties['monoisotopic_mass'] = mono_mass
+
+
+def __get_value(value):
+    '''Formats arrays as "x;y;x"'''
+    return ';'.join(value) \
+        if not isinstance(value, str) and isinstance(value, Iterable) \
+        else value
 
 
 def __create_db(db_loc, files):

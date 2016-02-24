@@ -13,6 +13,7 @@ import sys
 import tarfile
 import tempfile
 import urllib
+import sbcdb
 
 
 __NCBITAXONOMY_URL = 'ftp://ftp.ncbi.nih.gov/pub/taxonomy/taxdump.tar.gz'
@@ -21,11 +22,10 @@ __NCBITAXONOMY_URL = 'ftp://ftp.ncbi.nih.gov/pub/taxonomy/taxdump.tar.gz'
 def load(source=__NCBITAXONOMY_URL):
     '''Loads NCBI Taxonomy data.'''
     nodes_filename, names_filename = __get_ncbi_taxonomy_files(source)
-    ids, parent_ids, ranks = __parse_nodes(nodes_filename)
-    names, all_names = __parse_names(names_filename)
+    nodes, rels = __parse_nodes(nodes_filename)
+    __parse_names(nodes, names_filename)
 
-    return __write_nodes(ids, names, all_names, ranks), \
-        __write_rels(parent_ids)
+    return sbcdb.write_nodes(nodes.values()), sbcdb.write_rels(rels)
 
 
 def __get_ncbi_taxonomy_files(source):
@@ -46,71 +46,36 @@ def __get_ncbi_taxonomy_files(source):
 
 def __parse_nodes(filename):
     '''Parses nodes file.'''
-    ids = []
-    parent_ids = {}
-    ranks = {}
+    nodes = {}
+    rels = []
 
     with open(filename, 'r') as textfile:
         for line in textfile:
             tokens = [x.strip() for x in line.split('|')]
             tax_id = tokens[0]
-            ids.append(tax_id)
-            parent_ids[tax_id] = tokens[1]
-            ranks[tax_id] = tokens[2]
 
-    return ids, parent_ids, ranks
+            if tax_id is not '1':
+                rels.append([tax_id, 'is_a', tokens[1]])
+
+            nodes[tax_id] = {'taxonomy:ID': tax_id,
+                             ':LABEL': 'Organism;' + tokens[2]}
+
+    return nodes, rels
 
 
-def __parse_names(filename):
+def __parse_names(nodes, filename):
     '''Parses names file.'''
-    names = {}
-    all_names = {}
 
     with open(filename, 'r') as textfile:
         for line in textfile:
             tokens = [x.strip() for x in line.split('|')]
-            tax_id = tokens[0]
+            node = nodes[tokens[0]]
 
-            if tax_id not in names:
-                name = __encode(tokens[1])
-                names[tax_id] = name
-                all_names[tax_id] = set([name])
+            if 'name' not in node:
+                node['name'] = __encode(tokens[1])
+                node['names:string[]'] = set([node['name']])
             else:
-                all_names[tax_id].add(__encode(tokens[1]))
-
-    return names, all_names
-
-
-def __write_nodes(ids, names, all_names, ranks):
-    '''Write Node data to csv file.'''
-    temp_file = tempfile.NamedTemporaryFile(delete=False)
-
-    with open(temp_file.name, 'w') as textfile:
-        textfile.write('id:ID,taxonomy,name,names:string[],:LABEL\n')
-
-        for tax_id in ids:
-            textfile.write(','.join([tax_id,
-                                     tax_id,
-                                     names[tax_id],
-                                     ';'.join(all_names[tax_id]),
-                                     ';'.join(['Organism', ranks[tax_id]])]) +
-                           '\n')
-
-    return temp_file.name
-
-
-def __write_rels(parent_ids):
-    '''Write Relation data to csv file.'''
-    temp_file = tempfile.NamedTemporaryFile(delete=False)
-
-    with open(temp_file.name, 'w') as textfile:
-        textfile.write(':START_ID,:END_ID,:TYPE\n')
-
-        for tax_id, parent_id in parent_ids.iteritems():
-            if tax_id != '1':
-                textfile.write(','.join([tax_id, parent_id, 'is_a']) + '\n')
-
-    return temp_file.name
+                node['names:string[]'].add(__encode(tokens[1]))
 
 
 def __encode(string):
