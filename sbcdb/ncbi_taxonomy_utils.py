@@ -8,32 +8,28 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 @author:  neilswainston
 '''
 import os
+import re
 import sys
 import tarfile
 import tempfile
 import urllib
 
-import py2neo
-
-import sbcdb
-
 
 __NCBITAXONOMY_URL = 'ftp://ftp.ncbi.nih.gov/pub/taxonomy/taxdump.tar.gz'
 
 
-def load(url, source=__NCBITAXONOMY_URL):
+def load(source=__NCBITAXONOMY_URL):
     '''Loads NCBI Taxonomy data.'''
-    # Parse data:
-    nodes_filename, names_filename = __get_ncbi_taxonomy_files__(source)
-    data = __parse_nodes(nodes_filename)
-    __parse_names(data, names_filename)
+    nodes_filename, names_filename = __get_ncbi_taxonomy_files(source)
+    ids, parent_ids, ranks = __parse_nodes(nodes_filename)
+    names, all_names = __parse_names(names_filename)
 
-    # Contact Neo4j database, create Graph object:
-    graph = sbcdb.py2neo_utils.get_graph(url)
-    __submit(graph, data)
+    return __write_nodes(ids, names, all_names, ranks), \
+        __write_rels(parent_ids)
 
 
-def __get_ncbi_taxonomy_files__(source):
+def __get_ncbi_taxonomy_files(source):
+    '''Downloads and extracts NCBI Taxonomy files.'''
     temp_dir = tempfile.gettempdir()
     temp_gzipfile = tempfile.NamedTemporaryFile()
     urllib.urlretrieve(source, temp_gzipfile.name)
@@ -50,57 +46,76 @@ def __get_ncbi_taxonomy_files__(source):
 
 def __parse_nodes(filename):
     '''Parses nodes file.'''
-    data = {}
+    ids = []
+    parent_ids = {}
+    ranks = {}
 
     with open(filename, 'r') as textfile:
         for line in textfile:
             tokens = [x.strip() for x in line.split('|')]
-            data[tokens[0]] = {'parent_id': tokens[1], 'rank': tokens[2]}
+            tax_id = tokens[0]
+            ids.append(tax_id)
+            parent_ids[tax_id] = tokens[1]
+            ranks[tax_id] = tokens[2]
 
-    return data
+    return ids, parent_ids, ranks
 
 
-def __parse_names(data, filename):
+def __parse_names(filename):
     '''Parses names file.'''
+    names = {}
+    all_names = {}
+
     with open(filename, 'r') as textfile:
         for line in textfile:
             tokens = [x.strip() for x in line.split('|')]
-            typ = tokens[3]
+            tax_id = tokens[0]
 
-            if typ == 'synonym':
-                if 'synonym' not in data[tokens[0]]:
-                    data[tokens[0]][typ] = [tokens[1]]
-                else:
-                    data[tokens[0]][typ].append(tokens[1])
+            if tax_id not in names:
+                name = __encode(tokens[1])
+                names[tax_id] = name
+                all_names[tax_id] = set([name])
             else:
-                data[tokens[0]][typ] = tokens[1]
+                all_names[tax_id].add(__encode(tokens[1]))
+
+    return names, all_names
 
 
-def __submit(graph, data):
-    '''Submit data to the graph.'''
-    nodes = {}
-    rels = {}
+def __write_nodes(ids, names, all_names, ranks):
+    '''Write Node data to csv file.'''
+    temp_file = tempfile.NamedTemporaryFile(delete=False)
 
-    # Create nodes:
-    for node_id, properties in data.iteritems():
-        rank = properties.pop('rank')
-        properties['id'] = node_id
+    with open(temp_file.name, 'w') as textfile:
+        textfile.write('id:ID,taxonomy,name,names:string[],:LABEL\n')
 
-        node = py2neo.Node.cast(properties)
-        node.labels.add('Taxonomic rank')
-        node.labels.add(rank)
-        nodes[node_id] = node
+        for tax_id in ids:
+            textfile.write(','.join([tax_id,
+                                     tax_id,
+                                     names[tax_id],
+                                     ';'.join(all_names[tax_id]),
+                                     ';'.join(['Organism', ranks[tax_id]])]) +
+                           '\n')
 
-    # Create relationships;
-    for node_id in data:
-        node = nodes[node_id]
-        parent_id = node.properties.pop('parent_id')
+    return temp_file.name
 
-        if node_id != '1':
-            rels[len(rels)] = py2neo.rel(node, 'is_a', nodes[parent_id])
 
-    sbcdb.py2neo_utils.create(graph, nodes)
-    sbcdb.py2neo_utils.create(graph, rels, 256)
+def __write_rels(parent_ids):
+    '''Write Relation data to csv file.'''
+    temp_file = tempfile.NamedTemporaryFile(delete=False)
+
+    with open(temp_file.name, 'w') as textfile:
+        textfile.write(':START_ID,:END_ID,:TYPE\n')
+
+        for tax_id, parent_id in parent_ids.iteritems():
+            if tax_id != '1':
+                textfile.write(','.join([tax_id, parent_id, 'is_a']) + '\n')
+
+    return temp_file.name
+
+
+def __encode(string):
+    '''Encodes string, removing problematic characters.'''
+    return re.sub('[\'\",;]', ' ', string).strip()
 
 
 def main(argv):
