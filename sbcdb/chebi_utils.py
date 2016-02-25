@@ -21,7 +21,7 @@ def load():
 
     __add_node('CHEBI:24431', nodes, rels)
 
-    return sbcdb.write_nodes(nodes.values()), sbcdb.write_rels(rels)
+    return [sbcdb.write_nodes(nodes.values())], [sbcdb.write_rels(rels)]
 
 
 def __add_node(chebi_id, nodes, rels):

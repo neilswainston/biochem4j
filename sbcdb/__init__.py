@@ -14,7 +14,7 @@ import subprocess
 import sys
 import tempfile
 
-from sbcdb import chebi_utils, ncbi_taxonomy_utils
+from sbcdb import chebi_utils, mnxref_utils, ncbi_taxonomy_utils
 from synbiochem.utils import chem_utils
 
 
@@ -24,6 +24,7 @@ __PTH = '/Applications/Neo4j Community Edition.app/Contents/Resources/app/bin/'
 def load(db_loc):
     '''Loads data into neo4j from a number of sources.'''
     files = []
+    files.append(mnxref_utils.load())
     files.append(chebi_utils.load())
     files.append(ncbi_taxonomy_utils.load())
     __create_db(db_loc, files)
@@ -49,12 +50,16 @@ def write_nodes(nodes):
 def write_rels(rels):
     '''Writes Relationships to csv file.'''
     fle = tempfile.NamedTemporaryFile(delete=False)
+    all_keys = [x.keys() for rel in rels for x in rel if isinstance(x, dict)]
+    keys = list(set([x for sub in all_keys for x in sub]))
 
     with open(fle.name, 'w') as textfile:
-        textfile.write(':START_ID,:TYPE,:END_ID\n')
+        textfile.write(','.join([':START_ID', ':TYPE', ':END_ID'] + keys) +
+                       '\n')
 
         for rel in rels:
-            textfile.write(','.join(rel) + '\n')
+            textfile.write(','.join(rel[:3] + [str(rel[3][key])
+                                               for key in keys]) + '\n')
 
     return fle.name
 
@@ -81,6 +86,7 @@ def __get_value(value):
 def __create_db(db_loc, files):
     '''Creates the database from csv files.'''
     files = [list(elem) for elem in zip(*files)]
+    files = [[item for f in fle for item in f] for fle in files]
 
     for i in range(len(files[0])):
         files[0].insert(i * 2, '--nodes')

@@ -25,7 +25,7 @@ def load(source=__NCBITAXONOMY_URL):
     nodes, rels = __parse_nodes(nodes_filename)
     __parse_names(nodes, names_filename)
 
-    return sbcdb.write_nodes(nodes.values()), sbcdb.write_rels(rels)
+    return [sbcdb.write_nodes(nodes.values())], [sbcdb.write_rels(rels)]
 
 
 def __get_ncbi_taxonomy_files(source):
