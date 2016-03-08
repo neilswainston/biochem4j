@@ -14,7 +14,7 @@ import subprocess
 import sys
 import tempfile
 
-from sbcdb import chebi_utils, mnxref_utils, ncbi_taxonomy_utils
+from sbcdb import chebi_utils, mnxref_utils, ncbi_taxonomy_utils, rhea_utils
 from synbiochem.utils import chem_utils
 
 
@@ -24,6 +24,7 @@ __PTH = '/Applications/Neo4j Community Edition.app/Contents/Resources/app/bin/'
 def load(db_loc):
     '''Loads data into neo4j from a number of sources.'''
     files = []
+    files.append(rhea_utils.load())
     files.append(mnxref_utils.load())
     files.append(chebi_utils.load())
     files.append(ncbi_taxonomy_utils.load())

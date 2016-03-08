@@ -10,22 +10,19 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 import sys
 import tempfile
 import urllib
-import sbcdb
+from sbcdb import reaction_utils
 
 
 __RHEA_URL = 'ftp://ftp.ebi.ac.uk/pub/databases/rhea/tsv/rhea2uniprot.tsv'
 
 
-def load(url, source=__RHEA_URL):
+def load(source=__RHEA_URL):
     '''Loads Rhea data.'''
     # Parse data:
     temp_file = tempfile.NamedTemporaryFile()
     urllib.urlretrieve(source, temp_file.name)
     data = __parse(temp_file.name)
-
-    # Contact Neo4j database, create Graph object:
-    graph = sbcdb.py2neo_utils.get_graph(url)
-    sbcdb.reaction_utils.submit(graph, data, 'rhea')
+    return reaction_utils.submit(data, 'rhea')
 
 
 def __parse(filename):
