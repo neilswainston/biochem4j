@@ -10,19 +10,18 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 import sys
 import urllib2
 
-from sbcdb import py2neo_utils, reaction_utils
+from sbcdb import reaction_utils
 
 
-def load(url, organisms=None):
+def load():
     '''Loads KEGG data.'''
 
     # KEGG Reaction to EC:
     kegg_reac_ec = __parse('http://rest.kegg.jp/link/ec/reaction')
 
-    if organisms is None:
-        organisms = [line.split()[1]
-                     for line in urllib2.urlopen(
-            'http://rest.kegg.jp/list/organism')]
+    organisms_url = 'http://rest.kegg.jp/list/organism'
+    organisms = [line.split()[1]
+                 for line in urllib2.urlopen(organisms_url)][0:1]
 
     # EC to gene, gene to Uniprot:
     ec_genes = {}
@@ -36,11 +35,6 @@ def load(url, organisms=None):
 
     data = {}
 
-    # for ec_term in set(kegg_reac_ec.values()):
-    #    print ec_term
-    #    ec_genes[ec_term] = __parse_ec('http://rest.kegg.jp/get/' + ec_term,
-    #                                   org_genes)
-
     for kegg_reac, ec_terms in kegg_reac_ec.iteritems():
         for ec_term in ec_terms:
             if ec_term in ec_genes:
@@ -50,8 +44,7 @@ def load(url, organisms=None):
                             {kegg_reac[3:]: [val[3:]
                                              for val in gene_uniprots[gene]]})
 
-    # Contact Neo4j database, create Graph object:
-    reaction_utils.submit(py2neo_utils.get_graph(url), data, 'kegg.reaction')
+    return reaction_utils.submit(data, 'kegg.reaction')
 
 
 def __parse(url):
@@ -69,39 +62,10 @@ def __parse(url):
     return data
 
 
-def __parse_ec(url, org_genes):
-    '''Parses a KEGG EC entry.'''
-    in_genes = False
-    genes = []
-
-    for line in urllib2.urlopen(url):
-        if line.startswith('GENES'):
-            in_genes = True
-            line = line[len('GENES'):]
-
-        if in_genes:
-            if line.startswith(' '):
-                tokens = line.strip().split(':')
-                org = tokens[0]
-                gene_ids = [x[:x.index('(')] if '(' in x else x
-                            for x in tokens[1].strip().split()]
-
-                if org not in org_genes:
-                    org_genes[org] = gene_ids
-                else:
-                    org_genes[org].extend(gene_ids)
-
-                genes.extend([org + ':' + gene_id for gene_id in gene_ids])
-            else:
-                break
-
-    return genes
-
-
 def main(argv):
     '''main method'''
     load(*argv)
 
 
 if __name__ == "__main__":
-    main([sys.argv[1], sys.argv[2:]])
+    main(sys.argv[1:])

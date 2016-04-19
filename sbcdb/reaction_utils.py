@@ -21,12 +21,10 @@ def submit(data, source):
                                                                     source)
 
     # Create Enzyme nodes:
-    # org_nodes, org_enz_rels = __get_uniprot_data(enzyme_nodes, source)
     org_enz_rels = __get_uniprot_data(enzyme_nodes, source)
 
     return [sbcdb.write_nodes(reac_nodes.values()),
             sbcdb.write_nodes(enzyme_nodes.values()),
-            # sbcdb.write_nodes(org_nodes.values())
             ], \
         [sbcdb.write_rels(reac_enz_rels),
          sbcdb.write_rels(org_enz_rels)]
@@ -40,13 +38,12 @@ def __create_react_enzyme(data, source):
 
     for reac_id, uniprot_ids in data.iteritems():
         if reac_id not in reac_nodes:
-            reac_nodes[reac_id] = {':LABEL': 'Reaction',
-                                   source + ':ID': reac_id}
+            reac_nodes[reac_id] = {':LABEL': 'Reaction', source: reac_id}
 
         for uniprot_id in uniprot_ids:
             if uniprot_id not in enzyme_nodes:
                 enzyme_nodes[uniprot_id] = {
-                    ':LABEL': 'Enzyme', 'uniprot:ID': uniprot_id}
+                    ':LABEL': 'Enzyme', 'uniprot': uniprot_id}
 
             reac_enz_rels.append([reac_id, 'catalysed_by', uniprot_id,
                                   {'source': source}])
@@ -56,7 +53,6 @@ def __create_react_enzyme(data, source):
 
 def __get_uniprot_data(enzyme_nodes, source):
     '''Gets Uniprot data.'''
-    # organism_nodes = {}
     org_enz_rels = []
 
     fields = ['entry name', 'protein names', 'organism-id', 'ec']
@@ -68,10 +64,6 @@ def __get_uniprot_data(enzyme_nodes, source):
         enzyme_node = enzyme_nodes[uniprot_id]
         organism_id = uniprot_value.pop('Organism ID')
 
-        # if organism_id not in organism_nodes:
-        #    organism_nodes[organism_id] = {':LABEL': 'Organism',
-        #                                   'taxonomy:ID': organism_id}
-
         if 'Entry name' in uniprot_value:
             enzyme_node['entry'] = uniprot_value['Entry name']
 
@@ -79,7 +71,9 @@ def __get_uniprot_data(enzyme_nodes, source):
             regexp = re.compile(r'(?<=\()[^)]*(?=\))|^[^\(]*(?= \()')
             enzyme_node['names'] = regexp.findall(
                 uniprot_value['Protein names'])
-            enzyme_node['name'] = enzyme_node['names'][0]
+
+            if len(enzyme_node['names']) > 0:
+                enzyme_node['name'] = enzyme_node['names'][0]
 
         if 'EC number' in uniprot_value:
             enzyme_node['ec-code'] = uniprot_value['EC number']
@@ -87,5 +81,4 @@ def __get_uniprot_data(enzyme_nodes, source):
         org_enz_rels.append([organism_id, 'expresses', uniprot_id,
                              {'source': source}])
 
-    # return organism_nodes, org_enz_rels
     return org_enz_rels
