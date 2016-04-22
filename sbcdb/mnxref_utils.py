@@ -26,8 +26,9 @@ def load():
     reac_nodes, rels = __get_reac_nodes(reader.get_reac_data(),
                                         chem_nodes)
 
-    return [sbcdb.write_nodes(chem_nodes.values()),
-            sbcdb.write_nodes(reac_nodes.values())], [sbcdb.write_rels(rels)]
+    return [sbcdb.write_nodes(chem_nodes.values(), 'Chemical'),
+            sbcdb.write_nodes(reac_nodes.values(), 'Reaction')], \
+        [sbcdb.write_rels(rels, 'Reaction', 'Chemical')]
 
 
 def __get_chem_nodes(chem_data):
@@ -50,7 +51,7 @@ def __get_reac_nodes(reac_data, chem_nodes):
             mnx_id = properties.pop('id')
 
             properties[':LABEL'] = 'Reaction'
-            properties['mnx:ID'] = mnx_id
+            properties['mnx:ID(Reaction)'] = mnx_id
             reac_nodes[mnx_id] = properties
 
             for prt in chem_utils.parse_equation(properties.pop('equation')):
@@ -78,7 +79,7 @@ def __add_chem_node(properties, chem_nodes):
 
     mnx_id = properties.pop('id')
     properties[':LABEL'] = 'Chemical'
-    properties['mnx:ID'] = mnx_id
+    properties['mnx:ID(Chemical)'] = mnx_id
 
     chem_nodes[mnx_id] = properties
 

@@ -13,7 +13,8 @@ import urllib2
 from sbcdb import reaction_utils
 
 
-def load():
+def load(enzyme_source):
+    print 'kegg_utils.load'
     '''Loads KEGG data.'''
 
     # KEGG Reaction to EC:
@@ -21,7 +22,7 @@ def load():
 
     organisms_url = 'http://rest.kegg.jp/list/organism'
     organisms = [line.split()[1]
-                 for line in urllib2.urlopen(organisms_url)][0:1]
+                 for line in urllib2.urlopen(organisms_url)][12:13]
 
     # EC to gene, gene to Uniprot:
     ec_genes = {}
@@ -44,10 +45,11 @@ def load():
                             {kegg_reac[3:]: [val[3:]
                                              for val in gene_uniprots[gene]]})
 
-    return reaction_utils.submit(data, 'kegg.reaction')
+    return reaction_utils.submit(data, 'kegg.reaction', enzyme_source)
 
 
 def __parse(url):
+    print 'kegg_utils._parse'
     '''Parses url to form key to list of values dictionary.'''
     data = {}
 

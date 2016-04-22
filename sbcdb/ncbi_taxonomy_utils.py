@@ -25,7 +25,8 @@ def load(source=__NCBITAXONOMY_URL):
     nodes, rels = __parse_nodes(nodes_filename)
     __parse_names(nodes, names_filename)
 
-    return [sbcdb.write_nodes(nodes.values())], [sbcdb.write_rels(rels)]
+    return [sbcdb.write_nodes(nodes.values(), 'Organism')], \
+        [sbcdb.write_rels(rels, 'Organism', 'Organism')]
 
 
 def __get_ncbi_taxonomy_files(source):
@@ -57,7 +58,7 @@ def __parse_nodes(filename):
             if tax_id is not '1':
                 rels.append([tax_id, 'is_a', tokens[1]])
 
-            nodes[tax_id] = {'taxonomy:ID': tax_id,
+            nodes[tax_id] = {'taxonomy:ID(Organism)': tax_id,
                              ':LABEL': 'Organism;' + tokens[2]}
 
     return nodes, rels

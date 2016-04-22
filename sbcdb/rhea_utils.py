@@ -16,17 +16,19 @@ from sbcdb import reaction_utils
 __RHEA_URL = 'ftp://ftp.ebi.ac.uk/pub/databases/rhea/tsv/rhea2uniprot.tsv'
 
 
-def load(source=__RHEA_URL):
+def load(enzyme_source, source=__RHEA_URL):
     '''Loads Rhea data.'''
+    print 'rhea_utils.load'
     # Parse data:
     temp_file = tempfile.NamedTemporaryFile()
     urllib.urlretrieve(source, temp_file.name)
     data = __parse(temp_file.name)
-    return reaction_utils.submit(data, 'rhea')
+    return reaction_utils.submit(data[:1000], 'rhea', enzyme_source)
 
 
 def __parse(filename):
     '''Parses file.'''
+    print 'rhea_utils.__parse'
     data = {}
 
     with open(filename, 'r') as textfile:

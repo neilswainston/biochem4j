@@ -14,8 +14,8 @@ import subprocess
 import sys
 import tempfile
 
-from sbcdb import chebi_utils, kegg_utils, mnxref_utils, ncbi_taxonomy_utils, \
-    rhea_utils
+from sbcdb import chebi_utils, enzyme_utils, kegg_utils, mnxref_utils, \
+    ncbi_taxonomy_utils, rhea_utils
 from synbiochem.utils import chem_utils
 
 
@@ -24,18 +24,24 @@ __PTH = '/Applications/Neo4j Community Edition.app/Contents/Resources/app/bin/'
 
 def load(db_loc):
     '''Loads data into neo4j from a number of sources.'''
+    enzyme_source = enzyme_utils.EnzymeSource()
     files = []
     files.append(chebi_utils.load())
     files.append(ncbi_taxonomy_utils.load())
     files.append(mnxref_utils.load())
-    files.append(kegg_utils.load())
-    files.append(rhea_utils.load())
+    files.append(kegg_utils.load(enzyme_source))
+    files.append(rhea_utils.load(enzyme_source))
+    files.append(([write_nodes(enzyme_source.get_enzyme_nodes(), 'Enzyme')],
+                  [write_rels(enzyme_source.get_org_enz_rels(),
+                              'Organism', 'Enzyme')]))
+
     __create_db(db_loc, files)
 
 
-def write_nodes(nodes):
+def write_nodes(nodes, group):
     '''Writes Nodes to csv file.'''
-    fle = tempfile.NamedTemporaryFile(delete=False)
+    fle = tempfile.NamedTemporaryFile(suffix='.txt', prefix=group + '_',
+                                      delete=False)
 
     nodes = [{key: __get_value(value) for key, value in node.iteritems()}
              for node in nodes]
@@ -50,14 +56,16 @@ def write_nodes(nodes):
     return fle.name
 
 
-def write_rels(rels):
+def write_rels(rels, group_start, group_end):
     '''Writes Relationships to csv file.'''
     fle = tempfile.NamedTemporaryFile(delete=False)
     all_keys = [x.keys() for rel in rels for x in rel if isinstance(x, dict)]
     keys = list(set([x for sub in all_keys for x in sub]))
 
     with open(fle.name, 'w') as textfile:
-        textfile.write(','.join([':START_ID', ':TYPE', ':END_ID'] + keys) +
+        textfile.write(','.join([':START_ID(' + group_start + ')',
+                                 ':TYPE',
+                                 ':END_ID(' + group_end + ')'] + keys) +
                        '\n')
 
         for rel in rels:
@@ -89,7 +97,7 @@ def __get_value(value):
 def __create_db(db_loc, files):
     '''Creates the database from csv files.'''
     files = [list(elem) for elem in zip(*files)]
-    files = [[item for f in fle for item in f] for fle in files]
+    files = [sorted([item for f in fle for item in f]) for fle in files]
 
     for i in range(len(files[0])):
         files[0].insert(i * 2, '--nodes')

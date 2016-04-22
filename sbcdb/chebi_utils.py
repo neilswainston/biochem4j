@@ -21,7 +21,8 @@ def load():
 
     __add_node('CHEBI:24431', nodes, rels)
 
-    return [sbcdb.write_nodes(nodes.values())], [sbcdb.write_rels(rels)]
+    return [sbcdb.write_nodes(nodes.values(), 'Chemical')], \
+        [sbcdb.write_rels(rels, 'Chemical', 'Chemical')]
 
 
 def __add_node(chebi_id, nodes, rels):
@@ -31,7 +32,7 @@ def __add_node(chebi_id, nodes, rels):
 
         properties = {}
         properties[':LABEL'] = 'Chemical'
-        properties['chebi:ID'] = entity.get_id()
+        properties['chebi:ID(Chemical)'] = entity.get_id()
         properties['name'] = entity.get_name()
         properties['names:string[]'] = [name.get_name()
                                         for name in entity.get_names()] + \
