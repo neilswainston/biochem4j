@@ -84,7 +84,7 @@ def normalise_masses(properties):
         mono_mass = chem_utils.get_molecular_mass(properties['formula'])
 
         if not math.isnan(mono_mass):
-            properties['monoisotopic_mass'] = mono_mass
+            properties['monoisotopic_mass:float'] = mono_mass
 
 
 def __get_value(value):

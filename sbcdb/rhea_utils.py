@@ -23,7 +23,7 @@ def load(enzyme_source, source=__RHEA_URL):
     temp_file = tempfile.NamedTemporaryFile()
     urllib.urlretrieve(source, temp_file.name)
     data = __parse(temp_file.name)
-    return reaction_utils.submit(data[:1000], 'rhea', enzyme_source)
+    return reaction_utils.submit(data, 'rhea', enzyme_source)
 
 
 def __parse(filename):
@@ -42,6 +42,9 @@ def __parse(filename):
                     uniprot_id = tokens[3].strip()
                     __add(data, tokens[0], uniprot_id)
                     __add(data, tokens[2], uniprot_id)
+
+                if len(data) > 10:
+                    return data
             except IndexError:
                 print line
 
