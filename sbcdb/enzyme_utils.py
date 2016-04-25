@@ -8,17 +8,17 @@ import re
 from synbiochem.utils import sequence_utils
 
 
-class EnzymeSource(object):
-    '''Class to implement a source of Enzyme data.'''
+class EnzymeManager(object):
+    '''Class to implement a manager of Enzyme data.'''
 
     def __init__(self):
         '''Constructor.'''
-        self.__enzyme_nodes = {}
+        self.__nodes = {}
         self.__org_enz_rels = []
 
-    def get_enzyme_nodes(self):
+    def get_nodes(self):
         '''Gets enzyme nodes.'''
-        return self.__enzyme_nodes.values()
+        return self.__nodes.values()
 
     def get_org_enz_rels(self):
         '''Gets organism-to-enzyme relationships.'''
@@ -29,13 +29,13 @@ class EnzymeSource(object):
 
         fields = ['entry name', 'protein names', 'organism-id', 'ec']
         enzyme_ids = [enzyme_id for enzyme_id in enzyme_ids
-                      if enzyme_id not in self.__enzyme_nodes]
+                      if enzyme_id not in self.__nodes]
         uniprot_values = sequence_utils.get_uniprot_values(enzyme_ids, fields)
 
         for uniprot_id, uniprot_value in uniprot_values.iteritems():
             enzyme_node = {':LABEL': 'Enzyme',
                            'uniprot:ID(Enzyme)': uniprot_id}
-            self.__enzyme_nodes[uniprot_id] = enzyme_node
+            self.__nodes[uniprot_id] = enzyme_node
             uniprot_value.pop('Entry')
             organism_id = uniprot_value.pop('Organism ID')
 

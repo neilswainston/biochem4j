@@ -10,20 +10,19 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 import sys
 import tempfile
 import urllib
-from sbcdb import reaction_utils
 
 
 __RHEA_URL = 'ftp://ftp.ebi.ac.uk/pub/databases/rhea/tsv/rhea2uniprot.tsv'
 
 
-def load(enzyme_source, source=__RHEA_URL):
+def load(reaction_manager, source=__RHEA_URL):
     '''Loads Rhea data.'''
     print 'rhea_utils.load'
     # Parse data:
     temp_file = tempfile.NamedTemporaryFile()
     urllib.urlretrieve(source, temp_file.name)
     data = __parse(temp_file.name)
-    return reaction_utils.submit(data, 'rhea', enzyme_source)
+    reaction_manager.add_react_to_enz(data, 'rhea')
 
 
 def __parse(filename):
@@ -45,6 +44,7 @@ def __parse(filename):
 
                 if len(data) > 10:
                     return data
+
             except IndexError:
                 print line
 

@@ -14,7 +14,7 @@ import subprocess
 import sys
 import tempfile
 
-from sbcdb import chebi_utils, enzyme_utils, kegg_utils, mnxref_utils, \
+from sbcdb import chebi_utils, reaction_utils, kegg_utils, mnxref_utils, \
     ncbi_taxonomy_utils, rhea_utils
 from synbiochem.utils import chem_utils
 
@@ -24,16 +24,16 @@ __PTH = '/Applications/Neo4j Community Edition.app/Contents/Resources/app/bin/'
 
 def load(db_loc):
     '''Loads data into neo4j from a number of sources.'''
-    enzyme_source = enzyme_utils.EnzymeSource()
+    reaction_manager = reaction_utils.ReactionManager()
     files = []
     files.append(chebi_utils.load())
     files.append(ncbi_taxonomy_utils.load())
-    files.append(mnxref_utils.load())
-    files.append(kegg_utils.load(enzyme_source))
-    files.append(rhea_utils.load(enzyme_source))
-    files.append(([write_nodes(enzyme_source.get_enzyme_nodes(), 'Enzyme')],
-                  [write_rels(enzyme_source.get_org_enz_rels(),
-                              'Organism', 'Enzyme')]))
+
+    # Get Reaction data:
+    files.append(mnxref_utils.load(reaction_manager))
+    kegg_utils.load(reaction_manager)
+    rhea_utils.load(reaction_manager)
+    files.append(reaction_manager.get_files())
 
     __create_db(db_loc, files)
 

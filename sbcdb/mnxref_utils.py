@@ -8,7 +8,6 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 @author:  neilswainston
 '''
 import sys
-import traceback
 
 import libchebipy
 
@@ -17,17 +16,17 @@ from synbiochem.utils import chem_utils as chem_utils
 import sbcdb
 
 
-def load():
+def load(reaction_manager):
     '''Loads MnxRef data from the chem_prop.tsv, the chem_xref.tsv and
     reac_prop.tsv files.'''
     # Read mnxref data and generate nodes:
     reader = MnxRefReader()
     chem_nodes = __get_chem_nodes(reader.get_chem_data())
-    reac_nodes, rels = __get_reac_nodes(reader.get_reac_data(),
-                                        chem_nodes)
+    rels = __add_reac_nodes(reader.get_reac_data(),
+                            chem_nodes,
+                            reaction_manager)
 
-    return [sbcdb.write_nodes(chem_nodes.values(), 'Chemical'),
-            sbcdb.write_nodes(reac_nodes.values(), 'Reaction')], \
+    return [sbcdb.write_nodes(chem_nodes.values(), 'Chemical')], \
         [sbcdb.write_rels(rels, 'Reaction', 'Chemical')]
 
 
@@ -41,30 +40,23 @@ def __get_chem_nodes(chem_data):
     return chem_nodes
 
 
-def __get_reac_nodes(reac_data, chem_nodes):
+def __add_reac_nodes(reac_data, chem_nodes, reaction_manager):
     '''Get reaction nodes from data.'''
-    reac_nodes = {}
     rels = []
 
     for properties in reac_data.values():
-        try:
-            mnx_id = properties.pop('id')
+        mnx_id = properties.pop('id')
+        reac_id = reaction_manager.add_reaction('mnx', mnx_id, properties)
 
-            properties[':LABEL'] = 'Reaction'
-            properties['mnx:ID(Reaction)'] = mnx_id
-            reac_nodes[mnx_id] = properties
+        for prt in chem_utils.parse_equation(properties.pop('equation')):
+            chem_id = prt[0] \
+                if prt[0] in chem_nodes \
+                else __add_chem_node({'id': prt[0]}, chem_nodes)
 
-            for prt in chem_utils.parse_equation(properties.pop('equation')):
-                chem_id = prt[0] \
-                    if prt[0] in chem_nodes \
-                    else __add_chem_node({'id': prt[0]}, chem_nodes)
+            rels.append([reac_id, 'has_reactant', chem_id,
+                         {'stoichiometry:float': prt[1]}])
 
-                rels.append([mnx_id, 'has_reactant', chem_id,
-                             {'stoichiometry:float': prt[1]}])
-        except ValueError:
-            print traceback.print_exc()
-
-    return reac_nodes, rels
+    return rels
 
 
 def __add_chem_node(properties, chem_nodes):
@@ -77,13 +69,13 @@ def __add_chem_node(properties, chem_nodes):
 
     sbcdb.normalise_masses(properties)
 
-    mnx_id = properties.pop('id')
+    reac_id = properties.pop('id')
     properties[':LABEL'] = 'Chemical'
-    properties['mnx:ID(Chemical)'] = mnx_id
+    properties['mnx:ID(Chemical)'] = reac_id
 
-    chem_nodes[mnx_id] = properties
+    chem_nodes[reac_id] = properties
 
-    return mnx_id
+    return reac_id
 
 
 def main(argv):

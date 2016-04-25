@@ -7,39 +7,75 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 
 @author:  neilswainston
 '''
+from sbcdb.enzyme_utils import EnzymeManager
 import sbcdb
 
 
-def submit(data, source, enzyme_source):
-    '''Submit data to the graph.'''
-    print 'reaction_utils.submit'
+class ReactionManager(object):
+    '''Class to implement a manager of Reaction data.'''
 
-    # Create Reaction and Enzyme nodes:
-    reac_nodes, enzyme_ids, reac_enz_rels = __create_react_enzyme(data,
-                                                                  source)
+    def __init__(self):
+        '''Constructor.'''
+        self.__nodes = {}
+        self.__reac_ids = {}
+        self.__reac_enz_rels = []
+        self.__org_enz_rels = []
+        self.__enz_man = EnzymeManager()
 
-    # Create Enzyme nodes:
-    enzyme_source.add_uniprot_data(enzyme_ids, source)
+    def get_files(self):
+        '''Gets neo4j import files.'''
+        return ([sbcdb.write_nodes(self.__nodes.values(), 'Reaction'),
+                 sbcdb.write_nodes(self.__enz_man.get_nodes(), 'Enzyme')],
+                [sbcdb.write_rels(self.__reac_enz_rels, 'Reaction', 'Enzyme'),
+                 sbcdb.write_rels(self.__enz_man.get_org_enz_rels(),
+                                  'Organism', 'Enzyme')])
 
-    return [sbcdb.write_nodes(reac_nodes.values(), 'Reaction')], \
-        [sbcdb.write_rels(reac_enz_rels, 'Reaction', 'Enzyme')]
+    def add_reaction(self, source, reac_id, properties):
+        '''Adds a reaction to the collection of nodes, ensuring uniqueness.'''
+        reac_id = self.__reac_ids[source + reac_id] \
+            if source + reac_id in self.__reac_ids else reac_id
 
+        if reac_id not in self.__nodes:
+            properties[':LABEL'] = 'Reaction'
+            properties['id:ID(Reaction)'] = reac_id
+            properties['source'] = source
+            properties[source] = reac_id
+            self.__nodes[reac_id] = properties
 
-def __create_react_enzyme(data, source):
-    '''Creates Reaction and Enzyme nodes and their Relationships.'''
-    print 'reaction_utils.__create_react_enzyme'
-    reac_nodes = {}
-    enzyme_ids = []
-    reac_enz_rels = []
+            if 'mnx' in properties:
+                self.__reac_ids['mnx' + properties['mnx']] = reac_id
 
-    for reac_id, uniprot_ids in data.iteritems():
-        if reac_id not in reac_nodes:
-            reac_nodes[reac_id] = {':LABEL': 'Reaction',
-                                   source + ':ID(Reaction)': reac_id}
+            if 'kegg.reaction' in properties:
+                self.__reac_ids[
+                    'kegg.reaction' + properties['kegg.reaction']] = reac_id
 
-        for uniprot_id in uniprot_ids:
-            enzyme_ids.append(uniprot_id)
-            reac_enz_rels.append([reac_id, 'catalysed_by', uniprot_id,
-                                  {'source': source}])
+            if 'rhea' in properties:
+                self.__reac_ids['rhea' + properties['rhea']] = reac_id
 
-    return reac_nodes, list(set(enzyme_ids)), reac_enz_rels
+        return reac_id
+
+    def add_react_to_enz(self, data, source):
+        '''Submit data to the graph.'''
+        print 'reaction_utils.submit'
+
+        # Create Reaction and Enzyme nodes:
+        enzyme_ids = self.__create_react_enz(data, source)
+
+        # Create Enzyme nodes:
+        self.__enz_man.add_uniprot_data(enzyme_ids, source)
+
+    def __create_react_enz(self, data, source):
+        '''Creates Reaction and Enzyme nodes and their Relationships.'''
+        print 'reaction_utils.__create_react_enzyme'
+        enzyme_ids = []
+
+        for reac_id, uniprot_ids in data.iteritems():
+            reac_id = self.add_reaction(source, reac_id, {})
+
+            for uniprot_id in uniprot_ids:
+                enzyme_ids.append(uniprot_id)
+                self.__reac_enz_rels.append([reac_id, 'catalysed_by',
+                                             uniprot_id,
+                                             {'source': source}])
+
+        return list(set(enzyme_ids))

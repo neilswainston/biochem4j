@@ -10,12 +10,10 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 import sys
 import urllib2
 
-from sbcdb import reaction_utils
 
-
-def load(enzyme_source):
-    print 'kegg_utils.load'
+def load(reaction_manager):
     '''Loads KEGG data.'''
+    print 'kegg_utils.load'
 
     # KEGG Reaction to EC:
     kegg_reac_ec = __parse('http://rest.kegg.jp/link/ec/reaction')
@@ -45,12 +43,13 @@ def load(enzyme_source):
                             {kegg_reac[3:]: [val[3:]
                                              for val in gene_uniprots[gene]]})
 
-    return reaction_utils.submit(data, 'kegg.reaction', enzyme_source)
+    reaction_manager.add_react_to_enz(data, 'kegg.reaction')
 
 
 def __parse(url):
-    print 'kegg_utils._parse'
     '''Parses url to form key to list of values dictionary.'''
+    print 'kegg_utils._parse'
+
     data = {}
 
     for line in urllib2.urlopen(url):
