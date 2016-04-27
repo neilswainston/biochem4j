@@ -7,8 +7,6 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 
 @author:  neilswainston
 '''
-import sys
-
 import libchebipy
 
 from synbiochem.design.mnxref import MnxRefReader
@@ -16,31 +14,31 @@ from synbiochem.utils import chem_utils as chem_utils
 import sbcdb
 
 
-def load(reaction_manager):
+def load(chemical_manager, reaction_manager):
     '''Loads MnxRef data from the chem_prop.tsv, the chem_xref.tsv and
     reac_prop.tsv files.'''
     # Read mnxref data and generate nodes:
     reader = MnxRefReader()
-    chem_nodes = __get_chem_nodes(reader.get_chem_data())
-    rels = __add_reac_nodes(reader.get_reac_data(),
-                            chem_nodes,
-                            reaction_manager)
+    mnx_ids = _add_chemicals(reader.get_chem_data(), chemical_manager)
+    rels = _add_reac_nodes(reader.get_reac_data(),
+                           mnx_ids,
+                           chemical_manager,
+                           reaction_manager)
 
-    return [sbcdb.write_nodes(chem_nodes.values(), 'Chemical')], \
-        [sbcdb.write_rels(rels, 'Reaction', 'Chemical')]
+    return [], [sbcdb.write_rels(rels, 'Reaction', 'Chemical')]
 
 
-def __get_chem_nodes(chem_data):
+def _add_chemicals(chem_data, chem_manager):
     '''Get chemical nodes from data.'''
-    chem_nodes = {}
+    mnx_ids = {}
 
     for properties in chem_data.values():
-        __add_chem_node(properties, chem_nodes)
+        _add_chemical(properties, mnx_ids, chem_manager)
 
-    return chem_nodes
+    return mnx_ids
 
 
-def __add_reac_nodes(reac_data, chem_nodes, reaction_manager):
+def _add_reac_nodes(reac_data, mnx_ids, chem_manager, reaction_manager):
     '''Get reaction nodes from data.'''
     rels = []
 
@@ -49,9 +47,9 @@ def __add_reac_nodes(reac_data, chem_nodes, reaction_manager):
         reac_id = reaction_manager.add_reaction('mnx', mnx_id, properties)
 
         for prt in chem_utils.parse_equation(properties.pop('equation')):
-            chem_id = prt[0] \
-                if prt[0] in chem_nodes \
-                else __add_chem_node({'id': prt[0]}, chem_nodes)
+            chem_id = mnx_ids[prt[0]] \
+                if prt[0] in mnx_ids \
+                else _add_chemical({'id': prt[0]}, mnx_ids, chem_manager)
 
             rels.append([reac_id, 'has_reactant', chem_id,
                          {'stoichiometry:float': prt[1]}])
@@ -59,7 +57,7 @@ def __add_reac_nodes(reac_data, chem_nodes, reaction_manager):
     return rels
 
 
-def __add_chem_node(properties, chem_nodes):
+def _add_chemical(properties, mnx_ids, chem_manager):
     '''Adds a Chemical node with given id to the graph.'''
     if 'chebi' in properties:
         chebi_entity = libchebipy.ChebiEntity(properties['chebi'])
@@ -67,20 +65,13 @@ def __add_chem_node(properties, chem_nodes):
         if chebi_entity.get_parent_id() is not None:
             properties['chebi'] = chebi_entity.get_parent_id()
 
-    sbcdb.normalise_masses(properties)
-
-    reac_id = properties.pop('id')
-    properties[':LABEL'] = 'Chemical'
-    properties['mnx:ID(Chemical)'] = reac_id
-
-    chem_nodes[reac_id] = properties
-
-    return reac_id
-
-
-def main(argv):
-    '''main method'''
-    load(*argv)
-
-if __name__ == '__main__':
-    main(sys.argv[:1])
+    mnx_id = properties['mnx'] = properties.pop('id')
+    chem_id = chem_manager.add_chemical('chebi'
+                                        if 'chebi' in properties
+                                        else 'mnx',
+                                        properties['chebi']
+                                        if 'chebi' in properties
+                                        else mnx_id,
+                                        properties)
+    mnx_ids[mnx_id] = chem_id
+    return chem_id

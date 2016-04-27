@@ -7,16 +7,13 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 
 @author:  neilswainston
 '''
-import sys
 import urllib2
 
 
 def load(reaction_manager):
     '''Loads KEGG data.'''
-    print 'kegg_utils.load'
-
     # KEGG Reaction to EC:
-    kegg_reac_ec = __parse('http://rest.kegg.jp/link/ec/reaction')
+    kegg_reac_ec = _parse('http://rest.kegg.jp/link/ec/reaction')
 
     organisms_url = 'http://rest.kegg.jp/list/organism'
     organisms = [line.split()[1]
@@ -27,9 +24,9 @@ def load(reaction_manager):
     gene_uniprots = {}
 
     for org in organisms:
-        ec_genes.update(__parse(
+        ec_genes.update(_parse(
             'http://rest.kegg.jp/link/' + org.lower() + '/enzyme'))
-        gene_uniprots.update(__parse(
+        gene_uniprots.update(_parse(
             'http://rest.kegg.jp/conv/uniprot/' + org.lower()))
 
     data = {}
@@ -46,10 +43,8 @@ def load(reaction_manager):
     reaction_manager.add_react_to_enz(data, 'kegg.reaction')
 
 
-def __parse(url):
+def _parse(url):
     '''Parses url to form key to list of values dictionary.'''
-    print 'kegg_utils._parse'
-
     data = {}
 
     for line in urllib2.urlopen(url):
@@ -61,12 +56,3 @@ def __parse(url):
             data[tokens[0]] = [tokens[1]]
 
     return data
-
-
-def main(argv):
-    '''main method'''
-    load(*argv)
-
-
-if __name__ == "__main__":
-    main(sys.argv[1:])

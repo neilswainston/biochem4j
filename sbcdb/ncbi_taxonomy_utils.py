@@ -21,15 +21,15 @@ __NCBITAXONOMY_URL = 'ftp://ftp.ncbi.nih.gov/pub/taxonomy/taxdump.tar.gz'
 
 def load(source=__NCBITAXONOMY_URL):
     '''Loads NCBI Taxonomy data.'''
-    nodes_filename, names_filename = __get_ncbi_taxonomy_files(source)
-    nodes, rels = __parse_nodes(nodes_filename)
-    __parse_names(nodes, names_filename)
+    nodes_filename, names_filename = _get_ncbi_taxonomy_files(source)
+    nodes, rels = _parse_nodes(nodes_filename)
+    _parse_names(nodes, names_filename)
 
     return [sbcdb.write_nodes(nodes.values(), 'Organism')], \
         [sbcdb.write_rels(rels, 'Organism', 'Organism')]
 
 
-def __get_ncbi_taxonomy_files(source):
+def _get_ncbi_taxonomy_files(source):
     '''Downloads and extracts NCBI Taxonomy files.'''
     temp_dir = tempfile.gettempdir()
     temp_gzipfile = tempfile.NamedTemporaryFile()
@@ -45,7 +45,7 @@ def __get_ncbi_taxonomy_files(source):
         os.path.join(temp_dir, 'names.dmp')
 
 
-def __parse_nodes(filename):
+def _parse_nodes(filename):
     '''Parses nodes file.'''
     nodes = {}
     rels = []
@@ -64,7 +64,7 @@ def __parse_nodes(filename):
     return nodes, rels
 
 
-def __parse_names(nodes, filename):
+def _parse_names(nodes, filename):
     '''Parses names file.'''
 
     with open(filename, 'r') as textfile:
@@ -73,13 +73,13 @@ def __parse_names(nodes, filename):
             node = nodes[tokens[0]]
 
             if 'name' not in node:
-                node['name'] = __encode(tokens[1])
+                node['name'] = _encode(tokens[1])
                 node['names:string[]'] = set([node['name']])
             else:
-                node['names:string[]'].add(__encode(tokens[1]))
+                node['names:string[]'].add(_encode(tokens[1]))
 
 
-def __encode(string):
+def _encode(string):
     '''Encodes string, removing problematic characters.'''
     return re.sub('[\'\",;]', ' ', string).strip()
 

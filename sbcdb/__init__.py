@@ -14,8 +14,8 @@ import subprocess
 import sys
 import tempfile
 
-from sbcdb import chebi_utils, reaction_utils, kegg_utils, mnxref_utils, \
-    ncbi_taxonomy_utils, rhea_utils
+from sbcdb import chebi_utils, chemical_utils, kegg_utils, mnxref_utils, \
+    ncbi_taxonomy_utils, reaction_utils, rhea_utils
 from synbiochem.utils import chem_utils
 
 
@@ -24,15 +24,24 @@ __PTH = '/Applications/Neo4j Community Edition.app/Contents/Resources/app/bin/'
 
 def load(db_loc):
     '''Loads data into neo4j from a number of sources.'''
-    reaction_manager = reaction_utils.ReactionManager()
     files = []
-    files.append(chebi_utils.load())
+
+    # Get Organism data:
     files.append(ncbi_taxonomy_utils.load())
 
-    # Get Reaction data:
-    files.append(mnxref_utils.load(reaction_manager))
+    # Get Chemical and Reaction data:
+    chemical_manager = chemical_utils.ChemicalManager()
+    reaction_manager = reaction_utils.ReactionManager()
+    files.append(mnxref_utils.load(chemical_manager, reaction_manager))
+
+    # Get Chemical data:
+    files.append(chebi_utils.load(chemical_manager))
+
+    # Get Reaction / Enzyme / Organism data:
     kegg_utils.load(reaction_manager)
     rhea_utils.load(reaction_manager)
+
+    files.append(chemical_manager.get_files())
     files.append(reaction_manager.get_files())
 
     __create_db(db_loc, files)
@@ -75,18 +84,6 @@ def write_rels(rels, group_start, group_end):
     return fle.name
 
 
-def normalise_masses(properties):
-    '''Removes ambiguity in mass values by recalculating according to chemical
-    formula.'''
-    properties.pop('mass', None)
-
-    if 'formula' in properties and properties['formula'] is not None:
-        mono_mass = chem_utils.get_molecular_mass(properties['formula'])
-
-        if not math.isnan(mono_mass):
-            properties['monoisotopic_mass:float'] = mono_mass
-
-
 def __get_value(value):
     '''Formats arrays as "x;y;x"'''
     return ';'.join(value) \
@@ -106,8 +103,6 @@ def __create_db(db_loc, files):
         files[1].insert(i * 2, '--relationships')
 
     params = [__PTH + 'neo4j-import', '--into', db_loc] + files[0] + files[1]
-
-    print str(params)
 
     subprocess.call(params)
 

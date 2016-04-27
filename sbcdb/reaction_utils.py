@@ -51,13 +51,13 @@ class ReactionManager(object):
 
             if 'rhea' in properties:
                 self.__reac_ids['rhea' + properties['rhea']] = reac_id
+        else:
+            self.__nodes[reac_id].update(properties)
 
         return reac_id
 
     def add_react_to_enz(self, data, source):
         '''Submit data to the graph.'''
-        print 'reaction_utils.submit'
-
         # Create Reaction and Enzyme nodes:
         enzyme_ids = self.__create_react_enz(data, source)
 
@@ -66,7 +66,6 @@ class ReactionManager(object):
 
     def __create_react_enz(self, data, source):
         '''Creates Reaction and Enzyme nodes and their Relationships.'''
-        print 'reaction_utils.__create_react_enzyme'
         enzyme_ids = []
 
         for reac_id, uniprot_ids in data.iteritems():
