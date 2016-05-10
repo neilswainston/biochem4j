@@ -16,6 +16,8 @@ __RHEA_URL = 'ftp://ftp.ebi.ac.uk/pub/databases/rhea/tsv/rhea2uniprot.tsv'
 
 def load(reaction_manager, source=__RHEA_URL):
     '''Loads Rhea data.'''
+    # print 'Rhea: loading'
+
     # Parse data:
     temp_file = tempfile.NamedTemporaryFile()
     urllib.urlretrieve(source, temp_file.name)
@@ -37,9 +39,6 @@ def _parse(filename):
                 uniprot_id = tokens[3].strip()
                 _add(data, tokens[0], uniprot_id)
                 _add(data, tokens[2], uniprot_id)
-
-            if len(data) > 10:
-                return data
 
     return data
 
