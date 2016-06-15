@@ -8,7 +8,9 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 @author:  neilswainston
 '''
 import math
+
 import libchebipy
+
 import sbcdb
 import synbiochem.design
 
