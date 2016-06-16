@@ -9,8 +9,8 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 '''
 import math
 
+from sbcdb import build
 from synbiochem.utils import chem_utils
-import sbcdb
 
 
 class ChemicalManager(object):
@@ -23,7 +23,7 @@ class ChemicalManager(object):
 
     def get_files(self):
         '''Gets neo4j import files.'''
-        return ([sbcdb.build.write_nodes(self.__nodes.values(), 'Chemical')],
+        return ([build.write_nodes(self.__nodes.values(), 'Chemical')],
                 [])
 
     def add_chemical(self, source, chem_id, properties):

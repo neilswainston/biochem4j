@@ -9,9 +9,9 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 '''
 import libchebipy
 
+from sbcdb import build
 from synbiochem.design.mnxref import MnxRefReader
 from synbiochem.utils import chem_utils as chem_utils
-import sbcdb
 
 
 def load(chemical_manager, reaction_manager):
@@ -25,7 +25,7 @@ def load(chemical_manager, reaction_manager):
                            chemical_manager,
                            reaction_manager)
 
-    return [], [sbcdb.build.write_rels(rels, 'Reaction', 'Chemical')]
+    return [], [build.write_rels(rels, 'Reaction', 'Chemical')]
 
 
 def _add_chemicals(chem_data, chem_manager):

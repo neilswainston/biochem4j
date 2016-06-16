@@ -58,6 +58,6 @@ def _parse(url):
                 else:
                     data[tokens[0]] = [tokens[1]]
     except urllib2.HTTPError, err:
-        print err
+        print '\t'.join([url, err])
 
     return data

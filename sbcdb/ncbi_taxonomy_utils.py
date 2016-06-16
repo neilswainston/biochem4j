@@ -14,7 +14,7 @@ import tarfile
 import tempfile
 import urllib
 
-import sbcdb
+from sbcdb import build
 
 
 __NCBITAXONOMY_URL = 'ftp://ftp.ncbi.nih.gov/pub/taxonomy/taxdump.tar.gz'
@@ -26,8 +26,8 @@ def load(source=__NCBITAXONOMY_URL):
     nodes, rels = _parse_nodes(nodes_filename)
     _parse_names(nodes, names_filename)
 
-    return [sbcdb.build.write_nodes(nodes.values(), 'Organism')], \
-        [sbcdb.build.write_rels(rels, 'Organism', 'Organism')]
+    return [build.write_nodes(nodes.values(), 'Organism')], \
+        [build.write_rels(rels, 'Organism', 'Organism')]
 
 
 def _get_ncbi_taxonomy_files(source):
