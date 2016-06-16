@@ -23,7 +23,8 @@ class ChemicalManager(object):
 
     def get_files(self):
         '''Gets neo4j import files.'''
-        return ([sbcdb.write_nodes(self.__nodes.values(), 'Chemical')], [])
+        return ([sbcdb.build.write_nodes(self.__nodes.values(), 'Chemical')],
+                [])
 
     def add_chemical(self, source, chem_id, properties):
         '''Adds a chemical to the collection of nodes, ensuring uniqueness.'''

@@ -22,7 +22,7 @@ def load(chem_manager):
 
     _add_node('CHEBI:24431', chebi_ids, rels, chem_manager)
 
-    return [], [sbcdb.write_rels(rels, 'Chemical', 'Chemical')]
+    return [], [sbcdb.build.write_rels(rels, 'Chemical', 'Chemical')]
 
 
 def _add_node(chebi_id, chebi_ids, rels, chem_manager):

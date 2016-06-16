@@ -25,7 +25,7 @@ def load(chemical_manager, reaction_manager):
                            chemical_manager,
                            reaction_manager)
 
-    return [], [sbcdb.write_rels(rels, 'Reaction', 'Chemical')]
+    return [], [sbcdb.build.write_rels(rels, 'Reaction', 'Chemical')]
 
 
 def _add_chemicals(chem_data, chem_manager):

@@ -24,11 +24,13 @@ class ReactionManager(object):
 
     def get_files(self):
         '''Gets neo4j import files.'''
-        return ([sbcdb.write_nodes(self.__nodes.values(), 'Reaction'),
-                 sbcdb.write_nodes(self.__enz_man.get_nodes(), 'Enzyme')],
-                [sbcdb.write_rels(self.__reac_enz_rels, 'Reaction', 'Enzyme'),
-                 sbcdb.write_rels(self.__enz_man.get_org_enz_rels(),
-                                  'Organism', 'Enzyme')])
+        return ([sbcdb.build.write_nodes(self.__nodes.values(), 'Reaction'),
+                 sbcdb.build.write_nodes(self.__enz_man.get_nodes(),
+                                         'Enzyme')],
+                [sbcdb.build.write_rels(self.__reac_enz_rels, 'Reaction',
+                                        'Enzyme'),
+                 sbcdb.build.write_rels(self.__enz_man.get_org_enz_rels(),
+                                        'Organism', 'Enzyme')])
 
     def add_reaction(self, source, reac_id, properties):
         '''Adds a reaction to the collection of nodes, ensuring uniqueness.'''
