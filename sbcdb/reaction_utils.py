@@ -7,7 +7,7 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 
 @author:  neilswainston
 '''
-from sbcdb import build
+from sbcdb import utils
 from sbcdb.enzyme_utils import EnzymeManager
 
 
@@ -24,10 +24,10 @@ class ReactionManager(object):
 
     def get_files(self):
         '''Gets neo4j import files.'''
-        return ([build.write_nodes(self.__nodes.values(), 'Reaction'),
-                 build.write_nodes(self.__enz_man.get_nodes(), 'Enzyme')],
-                [build.write_rels(self.__reac_enz_rels, 'Reaction', 'Enzyme'),
-                 build.write_rels(self.__enz_man.get_org_enz_rels(),
+        return ([utils.write_nodes(self.__nodes.values(), 'Reaction'),
+                 utils.write_nodes(self.__enz_man.get_nodes(), 'Enzyme')],
+                [utils.write_rels(self.__reac_enz_rels, 'Reaction', 'Enzyme'),
+                 utils.write_rels(self.__enz_man.get_org_enz_rels(),
                                   'Organism', 'Enzyme')])
 
     def add_reaction(self, source, reac_id, properties):

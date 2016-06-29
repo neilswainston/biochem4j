@@ -10,14 +10,15 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 import urllib2
 
 
-def load(reaction_manager):
+def load(reaction_manager, organisms=None):
     '''Loads KEGG data.'''
     # KEGG Reaction to EC:
     kegg_reac_ec = _parse('http://rest.kegg.jp/link/ec/reaction')
 
-    organisms_url = 'http://rest.kegg.jp/list/organism'
-    organisms = [line.split()[1]
-                 for line in urllib2.urlopen(organisms_url)]
+    if organisms is None:
+        organisms_url = 'http://rest.kegg.jp/list/organism'
+        organisms = [line.split()[1]
+                     for line in urllib2.urlopen(organisms_url)]
 
     # EC to gene, gene to Uniprot:
     ec_genes = {}
@@ -58,6 +59,6 @@ def _parse(url):
                 else:
                     data[tokens[0]] = [tokens[1]]
     except urllib2.HTTPError, err:
-        print '\t'.join([url, err])
+        print '\t'.join([url, str(err)])
 
     return data

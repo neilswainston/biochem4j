@@ -11,7 +11,7 @@ import math
 
 import libchebipy
 
-from sbcdb import build
+from sbcdb import utils
 import synbiochem.design
 
 
@@ -22,7 +22,7 @@ def load(chem_manager):
 
     _add_node('CHEBI:24431', chebi_ids, rels, chem_manager)
 
-    return [], [build.write_rels(rels, 'Chemical', 'Chemical')]
+    return [], [utils.write_rels(rels, 'Chemical', 'Chemical')]
 
 
 def _add_node(chebi_id, chebi_ids, rels, chem_manager):

@@ -1,6 +1,6 @@
 #! /bin/bash
 
-PORT=7474
+PORT=80
 
 DIR=$(cd "$(dirname "$0")"; pwd)
 
