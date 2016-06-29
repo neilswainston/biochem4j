@@ -1,4 +1,5 @@
 /.project
 /.pydevproject
+/neo4j/data/*
 **/*.pyc
 **/.DS_Store
