@@ -1,12 +1,14 @@
-#! /bin/bash
+#!/usr/bin/env bash
 
 PORT=7474
 
 DIR=$(cd "$(dirname "$0")"; pwd)
 
-eval "$(docker-machine env default)"
+if [ "$(uname)" == "Darwin" ]; then
+	eval "$(docker-machine env default)"
+fi
 
-DOCKER_ID=$(sudo docker run \
+DOCKER_ID=$(docker run \
 --detach \
 --publish=$PORT:7474 \
 --publish=7687:7687 \
@@ -16,4 +18,5 @@ DOCKER_ID=$(sudo docker run \
 neo4j:3.0)
 
 echo "DOCKER_ID="$DOCKER_ID
+echo "DATABASE_LOCATION="$DIR"/neo4j/data/"
 echo "URL=http://"$(docker-machine ip)":"$PORT
