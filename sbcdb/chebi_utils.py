@@ -9,10 +9,8 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 '''
 import math
 
+from sbcdb import namespace_utils, utils
 import libchebipy
-
-from sbcdb import utils
-import synbiochem.design
 
 
 def load(chem_manager):
@@ -43,8 +41,8 @@ def _add_node(chebi_id, chebi_ids, rels, chem_manager):
         properties['smiles'] = entity.get_smiles()
 
         for db_acc in entity.get_database_accessions():
-            namespace = synbiochem.design.resolve_namespace(db_acc.get_type(),
-                                                            True)
+            namespace = namespace_utils.resolve_namespace(db_acc.get_type(),
+                                                          True)
 
             if namespace is not None:
                 properties[namespace] = db_acc.get_accession_number()
