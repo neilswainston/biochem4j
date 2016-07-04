@@ -9,8 +9,9 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 '''
 import math
 
-from sbcdb import utils
 from synbiochem.utils import chem_utils
+
+from sbcdb import utils
 
 
 class ChemicalManager(object):

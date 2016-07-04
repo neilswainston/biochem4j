@@ -7,10 +7,11 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 
 @author:  neilswainston
 '''
-from sbcdb import utils
-from synbiochem.design.mnxref import MnxRefReader
 from synbiochem.utils import chem_utils as chem_utils
 import libchebipy
+
+from sbcdb import utils
+from sbcdb.mnxref import MnxRefReader
 
 
 def load(chemical_manager, reaction_manager):

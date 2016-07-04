@@ -9,8 +9,9 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 '''
 import math
 
-from sbcdb import namespace_utils, utils
 import libchebipy
+
+from sbcdb import namespace_utils, utils
 
 
 def load(chem_manager):
