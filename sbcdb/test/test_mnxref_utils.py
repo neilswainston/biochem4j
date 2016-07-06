@@ -10,7 +10,7 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 # pylint: disable=too-many-public-methods
 import unittest
 
-from sbcdb.mnxref import MnxRefReader
+from sbcdb.mnxref_utils import MnxRefReader
 
 
 class TestMnxRefReader(unittest.TestCase):
