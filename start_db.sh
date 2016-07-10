@@ -14,5 +14,3 @@ sudo docker run \
 -e NEO4J_AUTH=none \
 -e EXTENSION_SCRIPT=/data/extension/extension_script.sh \
 neo4j:3.0
-
-echo "DOCKER_ID="$DOCKER_ID
