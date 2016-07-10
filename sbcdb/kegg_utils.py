@@ -17,15 +17,16 @@ def load(reaction_manager, organisms=None):
 
     if organisms is None:
         organisms_url = 'http://rest.kegg.jp/list/organism'
-        organisms = [line.split()[1]
-                     for line in urllib2.urlopen(organisms_url)]
+        organisms = sorted([line.split()[1]
+                            for line in urllib2.urlopen(organisms_url)])
 
     # EC to gene, gene to Uniprot:
     ec_genes = {}
     gene_uniprots = {}
 
     for org in organisms:
-        # print 'KEGG: loading ' + org
+        print 'KEGG: loading ' + org
+
         ec_genes.update(_parse(
             'http://rest.kegg.jp/link/' + org.lower() + '/enzyme'))
         gene_uniprots.update(_parse(
@@ -45,20 +46,24 @@ def load(reaction_manager, organisms=None):
     reaction_manager.add_react_to_enz(data, 'kegg.reaction')
 
 
-def _parse(url):
+def _parse(url, attempts=128):
     '''Parses url to form key to list of values dictionary.'''
     data = {}
 
-    try:
-        for line in urllib2.urlopen(url):
-            tokens = line.split()
+    for _ in range(attempts):
+        try:
+            for line in urllib2.urlopen(url):
+                tokens = line.split()
 
-            if len(tokens) > 1:
-                if tokens[0] in data:
-                    data[tokens[0]].append(tokens[1])
-                else:
-                    data[tokens[0]] = [tokens[1]]
-    except urllib2.HTTPError, err:
-        print '\t'.join([url, str(err)])
+                if len(tokens) > 1:
+                    if tokens[0] in data:
+                        data[tokens[0]].append(tokens[1])
+                    else:
+                        data[tokens[0]] = [tokens[1]]
+
+                return data
+        except urllib2.URLError, err:
+            # Take no action, but try again...
+            print '\t'.join([url, str(err)])
 
     return data

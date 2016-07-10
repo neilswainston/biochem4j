@@ -39,13 +39,13 @@ def build(db_loc):
     print 'Parsing KEGG'
 
     # All of KEGG *can* be included by commenting out this line...
-    kegg_utils.load(reaction_manager, ['eco'])
+    # kegg_utils.load(reaction_manager, ['eco'])
 
     # ...and uncommenting this.
     # However, this constitutes a "bulk data downloads" and is in contravention
     # of KEGG's licencing laws.
     # See http://www.kegg.jp/kegg/rest/
-    # kegg_utils.load(reaction_manager)
+    kegg_utils.load(reaction_manager)
 
     print 'Parsing Rhea'
     rhea_utils.load(reaction_manager)
