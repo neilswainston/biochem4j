@@ -43,9 +43,7 @@ class EnzymeManager(object):
                 enzyme_node['entry'] = uniprot_value['Entry name']
 
             if 'Protein names' in uniprot_value:
-                regexp = re.compile(r'(?<=\()[^)]*(?=\))|^[^\(]*(?= \()')
-                enzyme_node['names'] = regexp.findall(
-                    uniprot_value['Protein names'])
+                enzyme_node['names'] = uniprot_value['Protein names']
 
                 if len(enzyme_node['names']) > 0:
                     enzyme_node['name'] = enzyme_node['names'][0]
