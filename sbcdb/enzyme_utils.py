@@ -1,10 +1,12 @@
 '''
-Created on 21 Apr 2016
+SYNBIOCHEM-DB (c) University of Manchester 2015
 
-@author: neilswainston
+SYNBIOCHEM-DB is licensed under the MIT License.
+
+To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
+
+@author:  neilswainston
 '''
-import re
-
 from synbiochem.utils import sequence_utils
 
 
