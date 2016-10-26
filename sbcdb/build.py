@@ -37,14 +37,6 @@ def build(db_loc):
 
     # Get Reaction / Enzyme / Organism data:
     print 'Parsing KEGG'
-
-    # All of KEGG *can* be included by commenting out this line...
-    # kegg_utils.load(reaction_manager, ['eco'])
-
-    # ...and uncommenting this.
-    # However, this constitutes a "bulk data downloads" and is in contravention
-    # of KEGG's licencing laws.
-    # See http://www.kegg.jp/kegg/rest/
     kegg_utils.load(reaction_manager)
 
     print 'Parsing Rhea'
@@ -71,9 +63,15 @@ def __create_db(db_loc, files):
     for i in range(len(files[1])):
         files[1].insert(i * 2, '--relationships')
 
+    # Import database:
     params = ['neo4j-import', '--into', db_loc] + files[0] + files[1]
-
     subprocess.call(params)
+
+    # Index database:
+    with open('init.cql', 'rU') as init_file:
+        init = init_file.read()
+        params = ['neo4j-shell', '-path', db_loc, '-c', init]
+        subprocess.call(params)
 
 
 def main(argv):
