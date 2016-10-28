@@ -218,7 +218,7 @@ def _add_reac_nodes(reac_data, mnx_ids, mnx_formulae, mnx_charges,
         reac_id = reaction_manager.add_reaction('mnx', mnx_id, properties)
         reac_id_def[reac_id] = balanced_def
 
-    cofactors = _calc_cofactors(reac_id_def.values())
+    cofactors, cofactor_pairs = _calc_cofactors(reac_id_def.values())
     rels = []
 
     for reac_id, defn in reac_id_def.iteritems():
@@ -226,8 +226,14 @@ def _add_reac_nodes(reac_data, mnx_ids, mnx_formulae, mnx_charges,
         products = [term[3] for term in defn if term[2] > 0]
         reac_cofactors = []
 
+        # Set metabolites as cofactors:
+        for met in [term[3] for term in defn]:
+            if met in cofactors:
+                reac_cofactors.append(met)
+
+        # Set pairs as cofactors:
         for pair in itertools.product(reactants, products):
-            if tuple(sorted(pair)) in cofactors:
+            if tuple(sorted(pair)) in cofactor_pairs:
                 reac_cofactors.extend(pair)
 
         for term in defn:
@@ -240,23 +246,40 @@ def _add_reac_nodes(reac_data, mnx_ids, mnx_formulae, mnx_charges,
     return rels
 
 
-def _calc_cofactors(reaction_defs, cutoff=0.8):
+def _calc_cofactors(reaction_defs, cutoff=0.95):
     '''Calculates cofactors.'''
-    pairs = []
+    metabolites = Counter()
+    pairs = Counter()
 
+    # Count occurances of metabolites in all reactions...
     for reaction_def in reaction_defs:
-        reactants = [term[3] for term in reaction_def if term[2] < 0]
-        products = [term[3] for term in reaction_def if term[2] > 0]
+        metabolites.update([term[3] for term in reaction_def])
 
-        pairs.extend([tuple(sorted(pair))
+    cofactors = _filter(metabolites, cutoff)
+
+    # Calculate all reactant / product pairs...
+    for reaction_def in reaction_defs:
+        reactants = [term[3] for term in reaction_def if term[2] < 0 and
+                     term[3] not in cofactors]
+        products = [term[3] for term in reaction_def if term[2] > 0 and
+                    term[3] not in cofactors]
+
+        pairs.update([tuple(sorted(pair))
                       for pair in itertools.product(reactants, products)])
 
-    pairs_counter = Counter(pairs)
-    counts_counter = Counter(pairs_counter.values())
-    x, y = zip(*list(counts_counter.items()))
+    return cofactors, _filter(pairs, cutoff)
+
+
+def _filter(counter, cutoff):
+    '''Filter counter items according to cutoff.'''
+    # Count occurences of pairs, then bin into a histogram...
+    pairs_counter = Counter(counter.values())
+
+    # Fit straight-line to histogram log-log plot and filter...
+    x, y = zip(*list(pairs_counter.items()))
     m, b = numpy.polyfit(numpy.log(x), numpy.log(y), 1)
 
-    return [item[0] for item in pairs_counter.items()
+    return [item[0] for item in counter.items()
             if item[1] > math.exp(cutoff * -b / m)]
 
 
