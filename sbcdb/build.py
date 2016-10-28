@@ -46,10 +46,13 @@ def build(db_loc):
     files.append(reaction_manager.get_files())
 
     print 'Creating DB'
-    __create_db(db_loc, files)
+    _create_db(db_loc, files)
+
+    print 'Indexing DB'
+    _index_db(db_loc)
 
 
-def __create_db(db_loc, files):
+def _create_db(db_loc, files):
     '''Creates the database from csv files.'''
     if os.path.exists(db_loc):
         shutil.rmtree(db_loc)
@@ -67,11 +70,13 @@ def __create_db(db_loc, files):
     params = ['neo4j-import', '--into', db_loc] + files[0] + files[1]
     subprocess.call(params)
 
-    # Index database:
+
+def _index_db(db_loc):
+    '''Index database.'''
     with open('init.cql', 'rU') as init_file:
-        init = init_file.read()
-        params = ['neo4j-shell', '-path', db_loc, '-c', init]
-        subprocess.call(params)
+        for line in init_file:
+            params = ['neo4j-shell', '-path', db_loc, '-c', line.strip()]
+            subprocess.call(params)
 
 
 def main(argv):
