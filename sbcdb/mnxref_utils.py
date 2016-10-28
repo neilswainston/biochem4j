@@ -9,14 +9,17 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 '''
 # pylint: disable=too-many-arguments
 # pylint: disable=too-many-locals
+from collections import Counter
 import csv
+import itertools
 import math
 import urllib2
 
+from synbiochem.utils import chem_utils as chem_utils
 import libchebipy
+import numpy
 
 from sbcdb import namespace_utils, utils
-from synbiochem.utils import chem_utils as chem_utils
 
 
 _METANETX_URL = 'http://metanetx.org/cgi-bin/mnxget/mnxref/'
@@ -182,7 +185,7 @@ def _add_chemical(properties, mnx_ids, mnx_formulae, mnx_charges,
 def _add_reac_nodes(reac_data, mnx_ids, mnx_formulae, mnx_charges,
                     chem_manager, reaction_manager):
     '''Get reaction nodes from data.'''
-    rels = []
+    reac_id_def = {}
 
     for properties in reac_data.values():
         reac_def = []
@@ -213,12 +216,48 @@ def _add_reac_nodes(reac_data, mnx_ids, mnx_formulae, mnx_charges,
             balanced_def = reac_def
 
         reac_id = reaction_manager.add_reaction('mnx', mnx_id, properties)
+        reac_id_def[reac_id] = balanced_def
 
-        for term in balanced_def:
-            rels.append([reac_id, 'has_reactant', term[3],
+    cofactors = _calc_cofactors(reac_id_def.values())
+    rels = []
+
+    for reac_id, defn in reac_id_def.iteritems():
+        reactants = [term[3] for term in defn if term[2] < 0]
+        products = [term[3] for term in defn if term[2] > 0]
+        reac_cofactors = []
+
+        for pair in itertools.product(reactants, products):
+            if tuple(sorted(pair)) in cofactors:
+                reac_cofactors.extend(pair)
+
+        for term in defn:
+            rels.append([reac_id,
+                         'has_cofactor' if term[3] in reac_cofactors
+                         else 'has_reactant',
+                         term[3],
                          {'stoichiometry:float': term[2]}])
 
     return rels
+
+
+def _calc_cofactors(reaction_defs, cutoff=0.8):
+    '''Calculates cofactors.'''
+    pairs = []
+
+    for reaction_def in reaction_defs:
+        reactants = [term[3] for term in reaction_def if term[2] < 0]
+        products = [term[3] for term in reaction_def if term[2] > 0]
+
+        pairs.extend([tuple(sorted(pair))
+                      for pair in itertools.product(reactants, products)])
+
+    pairs_counter = Counter(pairs)
+    counts_counter = Counter(pairs_counter.values())
+    x, y = zip(*list(counts_counter.items()))
+    m, b = numpy.polyfit(numpy.log(x), numpy.log(y), 1)
+
+    return [item[0] for item in pairs_counter.items()
+            if item[1] > math.exp(cutoff * -b / m)]
 
 
 def _convert_to_float(dictionary, key):
