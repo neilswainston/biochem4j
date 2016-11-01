@@ -13,6 +13,7 @@ from collections import Counter
 import csv
 import itertools
 import math
+import re
 import urllib2
 
 from synbiochem.utils import chem_utils as chem_utils
@@ -31,6 +32,7 @@ class MnxRefReader(object):
 
     def __init__(self, source=_METANETX_URL):
         self.__source = source
+        self.__mnx_id_patt = re.compile(r'(MNX[MR])(\d+)')
         self.__chem_data = {}
         self.__reac_data = {}
 
@@ -57,6 +59,8 @@ class MnxRefReader(object):
 
         for values in self.__read_data('chem_prop.tsv'):
             if not values[0].startswith('#'):
+                values[0] = self.__parse_id(values[0])
+                values[7] = self.__parse_id(values[7])
                 props = dict(zip(chem_prop_keys, values))
                 props.pop('source')
                 _convert_to_float(props, 'charge')
@@ -72,36 +76,47 @@ class MnxRefReader(object):
         for values in self.__read_data(filename):
             if not values[0].startswith('#'):
                 xrefs = dict(zip(xref_keys[:len(values)], values))
-                xref = xrefs['XREF'].split(':')
+                evidence = xrefs.get('Evidence', 'identity')
 
-                if xrefs['MNX_ID'] in data:
-                    entry = data[xrefs['MNX_ID']]
-                    namespace = namespace_utils.resolve_namespace(xref[0],
-                                                                  chemical)
+                if evidence == 'identity' or evidence == 'structural':
+                    xrefs['MNX_ID'] = self.__parse_id(xrefs['MNX_ID'])
+                    xref = xrefs['XREF'].split(':')
 
-                    if namespace is not None:
-                        entry[namespace] = xref[1] \
-                            if namespace is not 'chebi' \
-                            else 'CHEBI:' + xref[1]
+                    if xrefs['MNX_ID'] in data:
+                        entry = data[xrefs['MNX_ID']]
+                        namespace = namespace_utils.resolve_namespace(xref[0],
+                                                                      chemical)
+
+                        if namespace is not None:
+                            xref[1] = self.__parse_id(xref[1])
+
+                            entry[namespace] = xref[1] \
+                                if namespace is not 'chebi' \
+                                else 'CHEBI:' + xref[1]
 
     def __read_reac_prop(self):
         '''Read reaction properties and create Nodes.'''
-        equation_key = 'equation'
-        reac_prop_keys = ['id', equation_key, 'description', 'balance', 'ec',
+        reac_prop_keys = ['id', 'equation', 'description', 'balance', 'ec',
                           'Source']
 
         for values in self.__read_data('reac_prop.tsv'):
             if not values[0].startswith('#'):
+                values[0] = self.__parse_id(values[0])
+                values[5] = self.__parse_id(values[5])
+
                 props = dict(zip(reac_prop_keys, values))
 
                 try:
                     participants = chem_utils.parse_equation(
-                        props[equation_key])
+                        props.pop('equation'))
 
                     for participant in participants:
+                        participant[0] = self.__parse_id(participant[0])
+
                         if participant[0] not in self.__chem_data:
                             self.__add_chem(participant[0])
 
+                    props['reac_defn'] = participants
                     self.__reac_data[values[0]] = props
                 except ValueError:
                     print 'WARNING: Suspected polymerisation reaction: ' + \
@@ -118,6 +133,15 @@ class MnxRefReader(object):
         strings.'''
         return list(csv.reader(urllib2.urlopen(self.__source + filename),
                                delimiter='\t'))
+
+    def __parse_id(self, item_id):
+        '''Parses mnx ids.'''
+        matches = self.__mnx_id_patt.findall(item_id)
+
+        for mat in matches:
+            return mat[0] + str(int(mat[1]))
+
+        return item_id
 
 
 def load(chemical_manager, reaction_manager):
@@ -196,7 +220,7 @@ def _add_reac_nodes(reac_data, mnx_ids, mnx_formulae, mnx_charges,
         if 'description' in properties:
             properties.pop('description')
 
-        for prt in chem_utils.parse_equation(properties.pop('equation')):
+        for prt in properties.pop('reac_defn'):
             chem_id = mnx_ids[prt[0]] \
                 if prt[0] in mnx_ids \
                 else _add_chemical({'id': prt[0]},
@@ -246,7 +270,7 @@ def _add_reac_nodes(reac_data, mnx_ids, mnx_formulae, mnx_charges,
     return rels
 
 
-def _calc_cofactors(reaction_defs, cutoff=0.95):
+def _calc_cofactors(reaction_defs, cutoff=1):
     '''Calculates cofactors.'''
     metabolites = Counter()
     pairs = Counter()
@@ -272,12 +296,17 @@ def _calc_cofactors(reaction_defs, cutoff=0.95):
 
 def _filter(counter, cutoff):
     '''Filter counter items according to cutoff.'''
+    for key in counter:
+        print str(key) + ' ' + str(counter[key])
+
     # Count occurences of pairs, then bin into a histogram...
-    pairs_counter = Counter(counter.values())
+    hist_counter = Counter(counter.values())
 
     # Fit straight-line to histogram log-log plot and filter...
-    x, y = zip(*list(pairs_counter.items()))
+    x, y = zip(*list(hist_counter.items()))
     m, b = numpy.polyfit(numpy.log(x), numpy.log(y), 1)
+
+    print str(cutoff) + '\t' + str(math.exp(cutoff * -b / m))
 
     return [item[0] for item in counter.items()
             if item[1] > math.exp(cutoff * -b / m)]
