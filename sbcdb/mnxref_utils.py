@@ -17,7 +17,6 @@ import re
 import urllib2
 
 from synbiochem.utils import chem_utils as chem_utils
-import libchebipy
 import numpy
 
 from sbcdb import namespace_utils, utils
@@ -41,6 +40,12 @@ class MnxRefReader(object):
         if len(self.__chem_data) == 0:
             self.__read_chem_prop()
             self.__read_xref('chem_xref.tsv', self.__chem_data, True)
+
+            # Add missing xrefs:
+            self.__add_xref(['chebi', '28938'],
+                            self.__chem_data['MNXM84'], True)  # NH4
+            self.__add_xref(['chebi', '30616'],
+                            self.__chem_data['MNXM114062'], True)  # ATP
 
         return self.__chem_data
 
@@ -84,15 +89,19 @@ class MnxRefReader(object):
 
                     if xrefs['MNX_ID'] in data:
                         entry = data[xrefs['MNX_ID']]
-                        namespace = namespace_utils.resolve_namespace(xref[0],
-                                                                      chemical)
+                        self.__add_xref(xref, entry, chemical)
 
-                        if namespace is not None:
-                            xref[1] = self.__parse_id(xref[1])
+    def __add_xref(self, xref, entry, chemical):
+        '''Adds an xref.'''
+        namespace = namespace_utils.resolve_namespace(xref[0],
+                                                      chemical)
 
-                            entry[namespace] = xref[1] \
-                                if namespace is not 'chebi' \
-                                else 'CHEBI:' + xref[1]
+        if namespace is not None:
+            xref[1] = self.__parse_id(xref[1])
+
+            entry[namespace] = xref[1] \
+                if namespace is not 'chebi' \
+                else 'CHEBI:' + xref[1]
 
     def __read_reac_prop(self):
         '''Read reaction properties and create Nodes.'''
@@ -144,178 +153,148 @@ class MnxRefReader(object):
         return item_id
 
 
-def load(chemical_manager, reaction_manager):
-    '''Loads MnxRef data from the chem_prop.tsv, the chem_xref.tsv and
-    reac_prop.tsv files.'''
-    # Read mnxref data and generate nodes:
-    reader = MnxRefReader()
-    mnx_ids, mnx_formulae, mnx_charges = \
-        _add_chemicals(reader.get_chem_data(), chemical_manager)
-    rels = _add_reac_nodes(reader.get_reac_data(),
-                           mnx_ids, mnx_formulae, mnx_charges,
-                           chemical_manager, reaction_manager)
+class MnxRefLoader(object):
+    '''Loads MNXref data into neo4j format.'''
 
-    return [], [utils.write_rels(rels, 'Reaction', 'Chemical')]
+    def __init__(self, chem_man, reac_man):
+        self.__chem_man = chem_man
+        self.__reac_man = reac_man
 
+    def load(self):
+        '''Loads MnxRef data from chem_prop.tsv, chem_xref.tsv,
+        reac_prop.tsv and reac_xref.tsv files.'''
+        reader = MnxRefReader()
 
-def _add_chemicals(chem_data, chem_manager):
-    '''Get chemical nodes from data.'''
-    mnx_ids = {}
-    mnx_formulae = {}
-    mnx_charges = {}
+        for properties in reader.get_chem_data().values():
+            properties['mnx'] = properties.pop('id')
+            self.__chem_man.add_chemical(properties)
 
-    for properties in chem_data.values():
-        _add_chemical(properties, mnx_ids, mnx_formulae, mnx_charges,
-                      chem_manager)
+        rels = self.__add_reac_nodes(reader.get_reac_data())
 
-    return mnx_ids, mnx_formulae, mnx_charges
+        return [], [utils.write_rels(rels, 'Reaction', 'Chemical')]
 
+    def __add_reac_nodes(self, reac_data):
+        '''Get reaction nodes from data.'''
+        reac_id_def = {}
 
-def _add_chemical(properties, mnx_ids, mnx_formulae, mnx_charges,
-                  chem_manager):
-    '''Adds a Chemical node with given id to the graph.'''
-    chebi_ent = None
+        for properties in reac_data.values():
+            reac_def = []
+            mnx_id = properties.pop('id')
 
-    if 'chebi' in properties:
-        chebi_ent = libchebipy.ChebiEntity(properties['chebi'])
+            # Remove equation and description (may be inconsistent with
+            # balanced reaction):
+            if 'description' in properties:
+                properties.pop('description')
 
-        if chebi_ent.get_parent_id() is not None:
-            properties['chebi'] = chebi_ent.get_parent_id()
+            for prt in properties.pop('reac_defn'):
+                chem_id, _ = self.__chem_man.add_chemical({'mnx': prt[0]})
 
-    mnx_id = properties['mnx'] = properties.pop('id')
-    chem_id = chem_manager.add_chemical('chebi'
-                                        if 'chebi' in properties
-                                        else 'mnx',
-                                        properties['chebi']
-                                        if 'chebi' in properties
-                                        else mnx_id,
-                                        properties)
-    mnx_ids[mnx_id] = chem_id
+                reac_def.append([self.__chem_man.get_prop(prt[0], 'formula'),
+                                 self.__chem_man.get_prop(prt[0],
+                                                          'charge:int', 0),
+                                 prt[1],
+                                 chem_id])
 
-    mnx_formulae[mnx_id] = chebi_ent.get_formula() \
-        if chebi_ent is not None \
-        else properties['formula'] \
-        if 'formula' in properties \
-        else None
-    mnx_charges[mnx_id] = chebi_ent.get_charge() \
-        if chebi_ent is not None and not math.isnan(chebi_ent.get_charge()) \
-        else properties['charge'] \
-        if 'charge' in properties \
-        else 0
+            if all([values[0] is not None for values in reac_def]):
+                balanced, _, balanced_def = chem_utils.balance(reac_def)
+                properties['balance'] = balanced
+            else:
+                properties['balance'] = 'unknown'
+                balanced_def = reac_def
 
-    return chem_id
+            reac_id = self.__reac_man.add_reaction('mnx', mnx_id,
+                                                   properties)
+            reac_id_def[reac_id] = balanced_def
 
+        chem_id_mass = self.__chem_man.get_props('monoisotopic_mass:float',
+                                                 float('NaN'))
+        cofactors = [chem_id
+                     for chem_id, mass in chem_id_mass.iteritems()
+                     if mass > 0 and mass < 44]  # Assume mass < CO2 = cofactor
 
-def _add_reac_nodes(reac_data, mnx_ids, mnx_formulae, mnx_charges,
-                    chem_manager, reaction_manager):
-    '''Get reaction nodes from data.'''
-    reac_id_def = {}
+        for cofact in cofactors:
+            mono_mass = self.__chem_man.get_prop(cofact,
+                                                 'monoisotopic_mass:float')
+            print '\t'.join([cofact,
+                             self.__chem_man.get_prop(cofact, 'name'),
+                             str(mono_mass)])
 
-    for properties in reac_data.values():
-        reac_def = []
-        mnx_id = properties.pop('id')
+        cofactor_pairs = self.__calc_cofactors(reac_id_def.values(), cofactors)
+        rels = []
 
-        # Remove equation and description (may be inconsistent with balanced
-        # reaction):
-        if 'description' in properties:
-            properties.pop('description')
+        for reac_id, defn in reac_id_def.iteritems():
+            reactants = [term[3] for term in defn if term[2] < 0]
+            products = [term[3] for term in defn if term[2] > 0]
+            reac_cofactors = []
 
-        for prt in properties.pop('reac_defn'):
-            chem_id = mnx_ids[prt[0]] \
-                if prt[0] in mnx_ids \
-                else _add_chemical({'id': prt[0]},
-                                   mnx_ids, mnx_formulae, mnx_charges,
-                                   chem_manager)
+            # Set metabolites as cofactors:
+            for met in [term[3] for term in defn]:
+                if met in cofactors:
+                    reac_cofactors.append(met)
 
-            reac_def.append([mnx_formulae[prt[0]],
-                             mnx_charges[prt[0]],
-                             prt[1],
-                             chem_id])
+            # Set pairs as cofactors:
+            for pair in itertools.product(reactants, products):
+                if tuple(sorted(pair)) in cofactor_pairs:
+                    reac_cofactors.extend(pair)
 
-        if all([values[0] is not None for values in reac_def]):
-            balanced, _, balanced_def = chem_utils.balance(reac_def)
-            properties['balance'] = balanced
-        else:
-            properties['balance'] = 'unknown'
-            balanced_def = reac_def
+            for term in defn:
+                rels.append([reac_id,
+                             'has_cofactor' if term[3] in reac_cofactors
+                             else 'has_reactant',
+                             term[3],
+                             {'stoichiometry:float': term[2]}])
 
-        reac_id = reaction_manager.add_reaction('mnx', mnx_id, properties)
-        reac_id_def[reac_id] = balanced_def
+        return rels
 
-    cofactors, cofactor_pairs = _calc_cofactors(reac_id_def.values())
-    rels = []
+    def __calc_cofactors(self, reaction_defs, cofactors, cutoff=1):
+        '''Calculates cofactors.'''
+        metabolites = Counter()
+        pairs = Counter()
 
-    for reac_id, defn in reac_id_def.iteritems():
-        reactants = [term[3] for term in defn if term[2] < 0]
-        products = [term[3] for term in defn if term[2] > 0]
-        reac_cofactors = []
+        # Count occurances of metabolites in all reactions...
+        for reaction_def in reaction_defs:
+            metabolites.update([term[3] for term in reaction_def])
 
-        # Set metabolites as cofactors:
-        for met in [term[3] for term in defn]:
-            if met in cofactors:
-                reac_cofactors.append(met)
+        # cofactors = _filter(metabolites, cutoff, id_map_met)
 
-        # Set pairs as cofactors:
-        for pair in itertools.product(reactants, products):
-            if tuple(sorted(pair)) in cofactor_pairs:
-                reac_cofactors.extend(pair)
+        # Calculate all reactant / product pairs...
+        for reaction_def in reaction_defs:
+            reactants = [term[3] for term in reaction_def if term[2] < 0 and
+                         term[3] not in cofactors]
+            products = [term[3] for term in reaction_def if term[2] > 0 and
+                        term[3] not in cofactors]
 
-        for term in defn:
-            rels.append([reac_id,
-                         'has_cofactor' if term[3] in reac_cofactors
-                         else 'has_reactant',
-                         term[3],
-                         {'stoichiometry:float': term[2]}])
+            pairs.update([tuple(sorted(pair))
+                          for pair in itertools.product(reactants, products)])
 
-    return rels
+        return self.__filter(pairs, cutoff)
 
+    def __filter(self, counter, cutoff):
+        '''Filter counter items according to cutoff.'''
+        for key in counter:
+            if isinstance(key, str):
+                name = self.__chem_man.get_prop(key, 'name' '')
+            else:
+                name = '; '.join([self.__chem_man.get_prop(term, 'name', '')
+                                  for term in key])
+            print str(key) + '\t' + name + '\t' + str(counter[key])
 
-def _calc_cofactors(reaction_defs, cutoff=1):
-    '''Calculates cofactors.'''
-    metabolites = Counter()
-    pairs = Counter()
+        # Count occurences of pairs, then bin into a histogram...
+        hist_counter = Counter(counter.values())
 
-    # Count occurances of metabolites in all reactions...
-    for reaction_def in reaction_defs:
-        metabolites.update([term[3] for term in reaction_def])
+        # Fit straight-line to histogram log-log plot and filter...
+        x, y = zip(*list(hist_counter.items()))
+        m, b = numpy.polyfit(numpy.log(x), numpy.log(y), 1)
 
-    cofactors = _filter(metabolites, cutoff)
+        print str(cutoff) + '\t' + str(math.exp(cutoff * -b / m))
 
-    # Calculate all reactant / product pairs...
-    for reaction_def in reaction_defs:
-        reactants = [term[3] for term in reaction_def if term[2] < 0 and
-                     term[3] not in cofactors]
-        products = [term[3] for term in reaction_def if term[2] > 0 and
-                    term[3] not in cofactors]
-
-        pairs.update([tuple(sorted(pair))
-                      for pair in itertools.product(reactants, products)])
-
-    return cofactors, _filter(pairs, cutoff)
-
-
-def _filter(counter, cutoff):
-    '''Filter counter items according to cutoff.'''
-    for key in counter:
-        print str(key) + ' ' + str(counter[key])
-
-    # Count occurences of pairs, then bin into a histogram...
-    hist_counter = Counter(counter.values())
-
-    # Fit straight-line to histogram log-log plot and filter...
-    x, y = zip(*list(hist_counter.items()))
-    m, b = numpy.polyfit(numpy.log(x), numpy.log(y), 1)
-
-    print str(cutoff) + '\t' + str(math.exp(cutoff * -b / m))
-
-    return [item[0] for item in counter.items()
-            if item[1] > math.exp(cutoff * -b / m)]
+        return [item[0] for item in counter.items()
+                if item[1] > math.exp(cutoff * -b / m)]
 
 
 def _convert_to_float(dictionary, key):
     '''Converts a key value in a dictionary to a float.'''
-    if key in dictionary and dictionary[key] is not None and \
-            len(str(dictionary[key])) > 0:
+    if len(dictionary.get(key, '')):
         dictionary[key] = float(dictionary[key])
     else:
         # Remove key:

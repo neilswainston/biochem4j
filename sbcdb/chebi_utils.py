@@ -7,11 +7,9 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 
 @author:  neilswainston
 '''
-import math
+from libchebipy._chebi_entity import ChebiEntity
 
-import libchebipy
-
-from sbcdb import namespace_utils, utils
+from sbcdb import utils
 
 
 def load(chem_manager):
@@ -27,32 +25,17 @@ def load(chem_manager):
 def _add_node(chebi_id, chebi_ids, rels, chem_manager):
     '''Constructs a node from libChEBI.'''
     if chebi_id not in chebi_ids:
-        entity = libchebipy.ChebiEntity(chebi_id)
-
-        properties = {}
-        properties['name'] = entity.get_name()
-        properties['names:string[]'] = [name.get_name()
-                                        for name in entity.get_names()] + \
-            [entity.get_name()]
-        properties['formula'] = entity.get_formula()
-        properties['charge'] = 0 if math.isnan(entity.get_charge()) \
-            else entity.get_charge()
-
-        properties['inchi'] = entity.get_inchi()
-        properties['smiles'] = entity.get_smiles()
-
-        for db_acc in entity.get_database_accessions():
-            namespace = namespace_utils.resolve_namespace(db_acc.get_type(),
-                                                          True)
-
-            if namespace is not None:
-                properties[namespace] = db_acc.get_accession_number()
-
         chebi_ids.append(chebi_id)
 
-        chem_id = chem_manager.add_chemical('chebi', chebi_id, properties)
+        chem_id, entity = chem_manager.add_chemical({'chebi': chebi_id})
 
         for incoming in entity.get_incomings():
             target_id = incoming.get_target_chebi_id()
+
+            chebi_ent = ChebiEntity(target_id)
+
+            if chebi_ent.get_parent_id():
+                target_id = chebi_ent.get_parent_id()
+
             _add_node(target_id, chebi_ids, rels, chem_manager)
             rels.append([target_id, incoming.get_type(), chem_id])

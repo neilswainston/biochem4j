@@ -25,25 +25,26 @@ def build(db_loc):
     files.append(ncbi_taxonomy_utils.load())
 
     # Get Chemical and Reaction data:
-    chemical_manager = chemical_utils.ChemicalManager()
-    reaction_manager = reaction_utils.ReactionManager()
+    chem_man = chemical_utils.ChemicalManager()
+    reac_man = reaction_utils.ReactionManager()
 
     print 'Parsing MNXref'
-    files.append(mnxref_utils.load(chemical_manager, reaction_manager))
+    mnx_loader = mnxref_utils.MnxRefLoader(chem_man, reac_man)
+    files.append(mnx_loader.load())
 
     # Get Chemical data:
     print 'Parsing ChEBI'
-    files.append(chebi_utils.load(chemical_manager))
+    files.append(chebi_utils.load(chem_man))
 
     # Get Reaction / Enzyme / Organism data:
     print 'Parsing KEGG'
-    kegg_utils.load(reaction_manager)
+    kegg_utils.load(reac_man)
 
     print 'Parsing Rhea'
-    rhea_utils.load(reaction_manager)
+    rhea_utils.load(reac_man)
 
-    files.append(chemical_manager.get_files())
-    files.append(reaction_manager.get_files())
+    files.append(chem_man.get_files())
+    files.append(reac_man.get_files())
 
     print 'Creating DB'
     _create_db(db_loc, files)
