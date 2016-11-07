@@ -246,16 +246,16 @@ class MnxRefLoader(object):
 
         return rels
 
-    def __calc_cofactors(self, reaction_defs, cofactors, cutoff=1):
+    def __calc_cofactors(self, reaction_defs, cofactors, cutoff=0.8):
         '''Calculates cofactors.'''
-        metabolites = Counter()
+        # metabolites = Counter()
         pairs = Counter()
 
         # Count occurances of metabolites in all reactions...
-        for reaction_def in reaction_defs:
-            metabolites.update([term[3] for term in reaction_def])
+        # for reaction_def in reaction_defs:
+        #     metabolites.update([term[3] for term in reaction_def])
 
-        # cofactors = _filter(metabolites, cutoff, id_map_met)
+        # self.__filter(metabolites, cutoff)
 
         # Calculate all reactant / product pairs...
         for reaction_def in reaction_defs:
@@ -277,7 +277,9 @@ class MnxRefLoader(object):
             else:
                 name = '; '.join([self.__chem_man.get_prop(term, 'name', '')
                                   for term in key])
-            print str(key) + '\t' + name + '\t' + str(counter[key])
+
+            print str(key) + '\t' + (name if name else str(key)) + '\t' + \
+                str(counter[key])
 
         # Count occurences of pairs, then bin into a histogram...
         hist_counter = Counter(counter.values())
