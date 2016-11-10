@@ -2,13 +2,9 @@
 
 DIR=$(cd "$(dirname "$0")"; pwd)
 
-if [ "$(uname)" == "Darwin" ]; then
-	eval "$(docker-machine env default)"
-fi
-
 docker run \
 --detach \
---publish=7474:7474 \
+--publish=80:7474 \
 --publish=7687:7687 \
 --volume=$DIR/neo4j/data:/data \
 -e NEO4J_AUTH=none \
