@@ -114,6 +114,7 @@ class MnxRefReader(object):
                 values[5] = self.__parse_id(values[5])
 
                 props = dict(zip(reac_prop_keys, values))
+                props.pop('Source')
 
                 try:
                     participants = chem_utils.parse_equation(
