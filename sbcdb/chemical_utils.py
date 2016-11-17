@@ -9,10 +9,11 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 '''
 import math
 
+import libchebipy
+
 from sbcdb import namespace_utils as ns_utils
 from sbcdb import utils
 from synbiochem.utils import chem_utils
-import libchebipy
 
 
 class ChemicalManager(object):
@@ -57,10 +58,7 @@ class ChemicalManager(object):
 
     def get_prop(self, chem_id, prop, default=None):
         '''Gets a property.'''
-        try:
-            return self.__nodes[self.__chem_ids[chem_id]].get(prop, default)
-        except KeyError, e:
-            print e
+        return self.__nodes[self.__chem_ids[chem_id]].get(prop, default)
 
     def __get_chem_id(self, properties):
         '''Manages chemical id mapping.'''
