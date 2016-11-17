@@ -8,7 +8,6 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 @author:  neilswainston
 '''
 from libchebipy._chebi_entity import ChebiEntity
-
 from sbcdb import utils
 
 

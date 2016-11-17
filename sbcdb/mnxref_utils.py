@@ -16,10 +16,10 @@ import math
 import re
 import urllib2
 
-from synbiochem.utils import chem_utils as chem_utils
 import numpy
 
 from sbcdb import namespace_utils, utils
+from synbiochem.utils import chem_utils as chem_utils
 
 
 _METANETX_URL = 'http://metanetx.org/cgi-bin/mnxget/mnxref/'
@@ -286,13 +286,11 @@ class MnxRefLoader(object):
         hist_counter = Counter(counter.values())
 
         # Fit straight-line to histogram log-log plot and filter...
-        x, y = zip(*list(hist_counter.items()))
-        m, b = numpy.polyfit(numpy.log(x), numpy.log(y), 1)
-
-        print str(cutoff) + '\t' + str(math.exp(cutoff * -b / m))
+        x_val, y_val = zip(*list(hist_counter.items()))
+        m_val, b_val = numpy.polyfit(numpy.log(x_val), numpy.log(y_val), 1)
 
         return [item[0] for item in counter.items()
-                if item[1] > math.exp(cutoff * -b / m)]
+                if item[1] > math.exp(cutoff * -b_val / m_val)]
 
 
 def _convert_to_float(dictionary, key):
