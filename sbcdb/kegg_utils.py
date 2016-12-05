@@ -13,8 +13,6 @@ import urllib2
 
 def load(reaction_manager, organisms=None):
     '''Loads KEGG data.'''
-    # KEGG Reaction to EC:
-    kegg_reac_ec = _parse('http://rest.kegg.jp/link/ec/reaction')
 
     if organisms is None:
         organisms_url = 'http://rest.kegg.jp/list/organism'
@@ -22,21 +20,12 @@ def load(reaction_manager, organisms=None):
                             for line in urllib2.urlopen(organisms_url)])
 
     # EC to gene, gene to Uniprot:
-    ec_genes = defaultdict(list)
-    gene_uniprots = defaultdict(list)
-
-    for org in organisms:
-        print 'KEGG: loading ' + org
-
-        for key, value in _parse('http://rest.kegg.jp/link/' + org.lower() +
-                                 '/enzyme').iteritems():
-            ec_genes[key].extend(value)
-
-        for key, value in _parse('http://rest.kegg.jp/conv/uniprot/' +
-                                 org.lower()).iteritems():
-            gene_uniprots[key].extend(value)
+    ec_genes, gene_uniprots = _get_gene_data(organisms)
 
     data = defaultdict(list)
+
+    # KEGG Reaction to EC:
+    kegg_reac_ec = _parse('http://rest.kegg.jp/link/ec/reaction')
 
     for kegg_reac, ec_terms in kegg_reac_ec.iteritems():
         for ec_term in ec_terms:
@@ -67,3 +56,22 @@ def _parse(url, attempts=128):
             print '\t'.join([url, str(err)])
 
     return data
+
+
+def _get_gene_data(organisms):
+    '''Gets gene data.'''
+    ec_genes = defaultdict(list)
+    gene_uniprots = defaultdict(list)
+
+    for org in organisms:
+        print 'KEGG: loading ' + org
+
+        for key, value in _parse('http://rest.kegg.jp/link/' + org.lower() +
+                                 '/enzyme').iteritems():
+            ec_genes[key].extend(value)
+
+        for key, value in _parse('http://rest.kegg.jp/conv/uniprot/' +
+                                 org.lower()).iteritems():
+            gene_uniprots[key].extend(value)
+
+    return ec_genes, gene_uniprots
