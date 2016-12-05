@@ -214,14 +214,7 @@ class MnxRefLoader(object):
                      for chem_id, mass in chem_id_mass.iteritems()
                      if mass > 0 and mass < 44]  # Assume mass < CO2 = cofactor
 
-        for cofact in cofactors:
-            mono_mass = self.__chem_man.get_prop(cofact,
-                                                 'monoisotopic_mass:float')
-            print '\t'.join([cofact,
-                             self.__chem_man.get_prop(cofact, 'name'),
-                             str(mono_mass)])
-
-        cofactor_pairs = self.__calc_cofactors(reac_id_def.values(), cofactors)
+        cofactor_pairs = _calc_cofactors(reac_id_def.values(), cofactors)
         rels = []
 
         for reac_id, defn in reac_id_def.iteritems():
@@ -248,50 +241,35 @@ class MnxRefLoader(object):
 
         return rels
 
-    def __calc_cofactors(self, reaction_defs, cofactors, cutoff=0.8):
-        '''Calculates cofactors.'''
-        # metabolites = Counter()
-        pairs = Counter()
 
-        # Count occurances of metabolites in all reactions...
-        # for reaction_def in reaction_defs:
-        #     metabolites.update([term[3] for term in reaction_def])
+def _calc_cofactors(reaction_defs, cofactors, cutoff=0.8):
+    '''Calculates cofactors.'''
+    pairs = Counter()
 
-        # self.__filter(metabolites, cutoff)
+    # Calculate all reactant / product pairs...
+    for reaction_def in reaction_defs:
+        reactants = [term[3] for term in reaction_def if term[2] < 0 and
+                     term[3] not in cofactors]
+        products = [term[3] for term in reaction_def if term[2] > 0 and
+                    term[3] not in cofactors]
 
-        # Calculate all reactant / product pairs...
-        for reaction_def in reaction_defs:
-            reactants = [term[3] for term in reaction_def if term[2] < 0 and
-                         term[3] not in cofactors]
-            products = [term[3] for term in reaction_def if term[2] > 0 and
-                        term[3] not in cofactors]
+        pairs.update([tuple(sorted(pair))
+                      for pair in itertools.product(reactants, products)])
 
-            pairs.update([tuple(sorted(pair))
-                          for pair in itertools.product(reactants, products)])
+    return _filter(pairs, cutoff)
 
-        return self.__filter(pairs, cutoff)
 
-    def __filter(self, counter, cutoff):
-        '''Filter counter items according to cutoff.'''
-        for key in counter:
-            if isinstance(key, str):
-                name = self.__chem_man.get_prop(key, 'name' '')
-            else:
-                name = '; '.join([self.__chem_man.get_prop(term, 'name', '')
-                                  for term in key])
+def _filter(counter, cutoff):
+    '''Filter counter items according to cutoff.'''
+    # Count occurences of pairs, then bin into a histogram...
+    hist_counter = Counter(counter.values())
 
-            print str(key) + '\t' + (name if name else str(key)) + '\t' + \
-                str(counter[key])
+    # Fit straight-line to histogram log-log plot and filter...
+    x_val, y_val = zip(*list(hist_counter.items()))
+    m_val, b_val = numpy.polyfit(numpy.log(x_val), numpy.log(y_val), 1)
 
-        # Count occurences of pairs, then bin into a histogram...
-        hist_counter = Counter(counter.values())
-
-        # Fit straight-line to histogram log-log plot and filter...
-        x_val, y_val = zip(*list(hist_counter.items()))
-        m_val, b_val = numpy.polyfit(numpy.log(x_val), numpy.log(y_val), 1)
-
-        return [item[0] for item in counter.items()
-                if item[1] > math.exp(cutoff * -b_val / m_val)]
+    return [item[0] for item in counter.items()
+            if item[1] > math.exp(cutoff * -b_val / m_val)]
 
 
 def _convert_to_float(dictionary, key):

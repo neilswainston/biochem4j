@@ -7,7 +7,7 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 
 @author:  neilswainston
 '''
-from synbiochem.utils import sequence_utils
+from synbiochem.utils import seq_utils
 
 
 class EnzymeManager(object):
@@ -32,7 +32,8 @@ class EnzymeManager(object):
         fields = ['entry name', 'protein names', 'organism-id', 'ec']
         enzyme_ids = [enzyme_id for enzyme_id in enzyme_ids
                       if enzyme_id not in self.__nodes]
-        uniprot_values = sequence_utils.get_uniprot_values(enzyme_ids, fields)
+        uniprot_values = seq_utils.get_uniprot_values(enzyme_ids, fields,
+                                                      verbose=True)
 
         for uniprot_id, uniprot_value in uniprot_values.iteritems():
             enzyme_node = {':LABEL': 'Enzyme',
