@@ -1,0 +1,2 @@
+libchebipy
+synbiochem-py

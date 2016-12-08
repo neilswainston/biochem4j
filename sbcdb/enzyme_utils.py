@@ -33,6 +33,7 @@ class EnzymeManager(object):
         enzyme_ids = [enzyme_id for enzyme_id in enzyme_ids
                       if enzyme_id not in self.__nodes]
         uniprot_values = seq_utils.get_uniprot_values(enzyme_ids, fields,
+                                                      batch_size=512,
                                                       verbose=True)
 
         for uniprot_id, uniprot_value in uniprot_values.iteritems():
