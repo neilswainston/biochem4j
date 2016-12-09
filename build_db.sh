@@ -1,3 +1,25 @@
 #!/usr/bin/env bash
-docker build --build-arg GUROBI_KEY=$1 -t synbiochem-db-build .
-docker run -d synbiochem-db-build
+DIR=$(cd "$(dirname "$0")"; pwd)
+
+cd $DIR
+
+pip install --upgrade pip
+pip install --upgrade numpy
+pip install --upgrade -r requirements.txt
+
+curl http://packages.gurobi.com/6.5/gurobi6.5.2_linux64.tar.gz --output gurobi6.5.2_linux64.tar.gz
+tar -xvf gurobi6.5.2_linux64.tar.gz
+cd gurobi652/linux64
+python setup.py install
+
+export GUROBI_HOME=$DIR/gurobi652/linux64
+export PATH=$PATH:$GUROBI_HOME/bin
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$GUROBI_HOME/lib
+
+cd $DIR/gurobi652/linux64/bin
+./grbgetkey $1
+cd $DIR
+
+export PYTHONPATH=$PYTHONPATH:$DIR
+
+python sbcdb/build.py /neo4j/data/databases/graph.db
