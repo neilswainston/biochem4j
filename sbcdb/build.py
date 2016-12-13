@@ -13,7 +13,7 @@ import subprocess
 import sys
 
 from sbcdb import chebi_utils, chemical_utils, kegg_utils, mnxref_utils, \
-    ncbi_taxonomy_utils, reaction_utils, rhea_utils
+    ncbi_taxonomy_utils, reaction_utils, rhea_utils, spectra_utils
 
 
 def build(db_loc):
@@ -35,6 +35,10 @@ def build(db_loc):
     # Get Chemical data:
     print 'Parsing ChEBI'
     files.append(chebi_utils.load(chem_man))
+
+    # Get Spectrum data:
+    print 'Parsing spectrum data'
+    files.append(spectra_utils.load(chem_man))
 
     # Get Reaction / Enzyme / Organism data:
     print 'Parsing KEGG'
@@ -59,7 +63,8 @@ def _create_db(db_loc, files):
         shutil.rmtree(db_loc)
 
     files = [list(elem) for elem in zip(*files)]
-    files = [sorted([item for f in fle for item in f]) for fle in files]
+    files = [sorted([item for f in fle for item in f if item is not None])
+             for fle in files]
 
     for i in range(len(files[0])):
         files[0].insert(i * 2, '--nodes')
@@ -69,6 +74,9 @@ def _create_db(db_loc, files):
 
     # Import database:
     params = ['neo4j-import', '--into', db_loc] + files[0] + files[1]
+
+    print ' '.join([val for val in params])
+
     subprocess.call(params)
 
 

@@ -14,10 +14,14 @@ import tempfile
 
 def write_nodes(nodes, group):
     '''Writes Nodes to csv file.'''
+    if not len(nodes):
+        return None
+
     fle = tempfile.NamedTemporaryFile(suffix='.txt', prefix=group + '_',
                                       delete=False)
 
-    nodes = [{key: __get_value(value) for key, value in node.iteritems()}
+    nodes = [{_get_key(key): __get_value(value)
+              for key, value in node.iteritems()}
              for node in nodes]
 
     with open(fle.name, 'w') as node_file:
@@ -32,6 +36,9 @@ def write_nodes(nodes, group):
 
 def write_rels(rels, group_start, group_end):
     '''Writes Relationships to csv file.'''
+    if not len(rels):
+        return None
+
     fle = tempfile.NamedTemporaryFile(delete=False)
     all_keys = [x.keys() for rel in rels for x in rel if isinstance(x, dict)]
     keys = list(set([x for sub in all_keys for x in sub]))
@@ -39,7 +46,8 @@ def write_rels(rels, group_start, group_end):
     with open(fle.name, 'w') as textfile:
         textfile.write(','.join([':START_ID(' + group_start + ')',
                                  ':TYPE',
-                                 ':END_ID(' + group_end + ')'] + keys) +
+                                 ':END_ID(' + group_end + ')'] +
+                                [_get_key(key) for key in keys]) +
                        '\n')
 
         for rel in rels:
@@ -49,8 +57,15 @@ def write_rels(rels, group_start, group_end):
     return fle.name
 
 
+def _get_key(key):
+    '''Gets formatted key.'''
+    tokens = key.split(':')
+    return '`' + tokens[0] + '`' + (':' + tokens[1] if len(tokens) == 2
+                                    else '')
+
+
 def __get_value(value):
     '''Formats arrays as "x;y;x"'''
-    return ';'.join(value) \
+    return ';'.join([str(val) for val in value]) \
         if not isinstance(value, str) and isinstance(value, Iterable) \
         else value
