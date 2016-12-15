@@ -63,4 +63,4 @@ def _get_value(value):
         else:
             return value.encode('utf-8')
 
-    return value
+    return str(value)
