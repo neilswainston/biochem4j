@@ -12,6 +12,7 @@ import uuid
 
 from libchebipy._chebi_entity import ChebiEntity, ChebiException
 from synbiochem.utils import chem_utils
+
 from sbcdb import namespace_utils as ns_utils
 from sbcdb import utils
 
@@ -67,7 +68,7 @@ class ChemicalManager(object):
 
         if chebi_id:
             try:
-                chebi_ent = _get_chebi_data(chebi_id, properties)
+                chebi_ent = _get_chebi_data(str(chebi_id), properties)
             except ChebiException, err:
                 print err
             except ValueError, err:

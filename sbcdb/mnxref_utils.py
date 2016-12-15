@@ -17,10 +17,10 @@ import math
 import re
 import urllib2
 
+from synbiochem.utils import chem_utils as chem_utils
 import numpy
 
 from sbcdb import namespace_utils, utils
-from synbiochem.utils import chem_utils as chem_utils
 
 
 _METANETX_URL = 'http://metanetx.org/cgi-bin/mnxget/mnxref/'

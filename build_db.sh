@@ -16,9 +16,12 @@ export GUROBI_HOME=$DIR/gurobi652/linux64
 export PATH=$PATH:$GUROBI_HOME/bin
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$GUROBI_HOME/lib
 
-cd $DIR/gurobi652/linux64/bin
-./grbgetkey $1
-cd $DIR
+if [ $# -eq 0 ]
+	then
+		cd $DIR/gurobi652/linux64/bin
+		./grbgetkey $1
+		cd $DIR
+fi
 
 export PYTHONPATH=$PYTHONPATH:$DIR
 

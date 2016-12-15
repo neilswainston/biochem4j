@@ -15,9 +15,9 @@ def load(reaction_manager, organisms=None):
     '''Loads KEGG data.'''
 
     if organisms is None:
-        organisms_url = 'http://rest.kegg.jp/list/organism'
-        organisms = sorted([line.split()[1]
-                            for line in urllib2.urlopen(organisms_url)])
+        organisms = \
+            sorted([line.split()[1] for line in
+                    urllib2.urlopen('http://rest.kegg.jp/list/organism')])
 
     # EC to gene, gene to Uniprot:
     ec_genes, gene_uniprots = _get_gene_data(organisms)
