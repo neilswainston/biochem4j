@@ -7,16 +7,18 @@ pip install --upgrade pip
 pip install --upgrade numpy
 pip install --upgrade -r requirements.txt
 
-curl http://packages.gurobi.com/6.5/gurobi6.5.2_linux64.tar.gz --output gurobi6.5.2_linux64.tar.gz
-tar -xvf gurobi6.5.2_linux64.tar.gz
-cd gurobi652/linux64
-python setup.py install
+if [ ! -f gurobi652/linux64 ]; then
+    curl http://packages.gurobi.com/6.5/gurobi6.5.2_linux64.tar.gz --output gurobi6.5.2_linux64.tar.gz
+	tar -xvf gurobi6.5.2_linux64.tar.gz
+	cd gurobi652/linux64
+	python setup.py install
+fi
 
 export GUROBI_HOME=$DIR/gurobi652/linux64
 export PATH=$PATH:$GUROBI_HOME/bin
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$GUROBI_HOME/lib
 
-if [ $# -eq 0 ]
+if [ $# -ne 0 ]
 	then
 		cd $DIR/gurobi652/linux64/bin
 		./grbgetkey $1
