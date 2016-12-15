@@ -57,6 +57,6 @@ def write_rels(rels, group_start, group_end):
 
 def __get_value(value):
     '''Formats arrays as "x;y;x"'''
-    return ';'.join([str(val) for val in value]) \
+    return ';'.join([val.encode('utf-8') for val in value]) \
         if not isinstance(value, str) and not isinstance(value, unicode) and \
-        isinstance(value, Iterable) else value
+        isinstance(value, Iterable) else value.encode('utf-8')
