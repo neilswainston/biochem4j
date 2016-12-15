@@ -49,8 +49,10 @@ def write_rels(rels, group_start, group_end):
                        '\n')
 
         for rel in rels:
-            textfile.write(','.join(rel[:3] + [str(rel[3][key])
-                                               for key in keys]) + '\n')
+            textfile.write(','.join([_get_value(val)
+                                     for val in rel[:3]] +
+                                    [_get_value(rel[3][key])
+                                     for key in keys]) + '\n')
 
     return fle.name
 
