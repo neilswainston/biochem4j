@@ -73,6 +73,10 @@ class ChemicalManager(object):
                 properties.pop('chebi')
                 chebi_id = None
                 print err
+            except ValueError, err:
+                properties.pop('chebi')
+                chebi_id = None
+                print err
 
         mnx_id = properties.get('mnx', None)
         inchi_id = properties.get('inchi', None)
