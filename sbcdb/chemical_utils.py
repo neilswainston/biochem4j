@@ -68,10 +68,10 @@ class ChemicalManager(object):
 
         if chebi_id:
             try:
-                chebi_ent = _get_chebi_data(str(chebi_id), properties)
+                chebi_id, chebi_ent = _get_chebi_data(chebi_id, properties)
             except ChebiException, err:
-                print err
-            except ValueError, err:
+                properties.pop('chebi')
+                chebi_id = None
                 print err
 
         mnx_id = properties.get('mnx', None)
@@ -114,11 +114,14 @@ class ChemicalManager(object):
 
 def _get_chebi_data(chebi_id, properties):
     '''Gets ChEBI data.'''
-    chebi_ent = ChebiEntity(chebi_id)
+    chebi_ent = ChebiEntity(str(chebi_id))
 
     if chebi_ent.get_parent_id():
         chebi_id = chebi_ent.get_parent_id()
-        properties['chebi'] = chebi_id
+    else:
+        chebi_id = chebi_ent.get_id()
+
+    properties['chebi'] = chebi_id
 
     formula = chebi_ent.get_formula()
     charge = chebi_ent.get_charge()
@@ -149,7 +152,7 @@ def _get_chebi_data(chebi_id, properties):
         if namespace is not None:
             properties[namespace] = db_acc.get_accession_number()
 
-    return chebi_ent
+    return chebi_id, chebi_ent
 
 
 def _normalise_mass(properties):
