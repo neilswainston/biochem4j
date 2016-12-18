@@ -112,6 +112,8 @@ def _parse_compound_metadata(name, value, record):
     if name == 'chebi' and isinstance(value, unicode):
         value = value.replace('CHEBI:', '').split()[0]
 
+    name = name.replace(':', '_')
+
     key = name + ':float' if isinstance(value, Decimal) else name
     value = float(value) if isinstance(value, Decimal) else value
     record['chemical'][key] = value
@@ -123,9 +125,18 @@ def _parse_item_metadata(name, value, record):
         if name == 'retention time' or \
                 name == 'retention index' or \
                 name == 'derivative mw' or \
-                name == 'derivative mass':
+                name == 'derivative mass' or \
+                name == 'colenergy2' or \
+                name == 'collision energy' or \
+                name == 'exact mass' or \
+                name == 'exactmass' or \
+                name == 'full scan fragment ion peak' or \
+                name == 'isolation width' or \
+                name == 'precursor m/z':
             tokens = str(value).split()
             value = Decimal(float(tokens[0]))
+
+        name = name.replace(':', '_')
 
         key = name + \
             ':float' if isinstance(value, Decimal) else name
