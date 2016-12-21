@@ -27,4 +27,4 @@ fi
 
 export PYTHONPATH=$PYTHONPATH:$DIR
 
-python sbcdb/build.py /neo4j/data/databases/graph.db
+python sbcdb/build.py neo4j/data/databases/graph.db

@@ -82,7 +82,10 @@ def _create_db(db_loc, files):
 
 def _index_db(db_loc):
     '''Index database.'''
-    with open('init.cql', 'rU') as init_file:
+    directory = os.path.dirname(os.path.realpath(__file__))
+    filename = os.path.join(directory, 'init.cql')
+
+    with open(filename, 'rU') as init_file:
         for line in init_file:
             params = ['neo4j-shell', '-path', db_loc, '-c', line.strip()]
             subprocess.call(params)
