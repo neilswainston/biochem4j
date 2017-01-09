@@ -12,8 +12,9 @@ import shutil
 import subprocess
 import sys
 
-from sbcdb import chebi_utils, chemical_utils, kegg_utils, mnxref_utils, \
-    ncbi_taxonomy_utils, reaction_utils, rhea_utils  # , spectra_utils
+from sbcdb import index, chebi_utils, chemical_utils, kegg_utils, \
+    mnxref_utils, ncbi_taxonomy_utils, reaction_utils, rhea_utils
+# , spectra_utils
 
 
 def build_db(db_loc):
@@ -24,7 +25,7 @@ def build_db(db_loc):
     create_db(db_loc, files)
 
     print 'Indexing DB'
-    index_db(db_loc)
+    index.index_db(db_loc)
 
 
 def create_db(db_loc, files):
@@ -48,17 +49,6 @@ def create_db(db_loc, files):
     print ' '.join([val for val in params])
 
     subprocess.call(params)
-
-
-def index_db(db_loc):
-    '''Index database.'''
-    directory = os.path.dirname(os.path.realpath(__file__))
-    filename = os.path.join(directory, 'init.cql')
-
-    with open(filename, 'rU') as init_file:
-        for line in init_file:
-            params = ['neo4j-shell', '-path', db_loc, '-c', line.strip()]
-            subprocess.call(params)
 
 
 def _get_csv_files():
@@ -100,9 +90,7 @@ def _get_csv_files():
 
 def main(argv):
     '''main method'''
-    if len(argv) == 2 and argv[0] == '--index':
-        index_db(argv[1])
-    elif len(argv) > 2 and argv[0] == '--create':
+    if len(argv) > 2 and argv[0] == '--create':
         create_db(argv[1], argv[2:])
     else:
         build_db(argv[0])
