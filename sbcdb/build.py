@@ -13,51 +13,21 @@ import subprocess
 import sys
 
 from sbcdb import chebi_utils, chemical_utils, kegg_utils, mnxref_utils, \
-    ncbi_taxonomy_utils, reaction_utils, rhea_utils, spectra_utils
+    ncbi_taxonomy_utils, reaction_utils, rhea_utils  # , spectra_utils
 
 
-def build(db_loc):
+def build_db(db_loc):
     '''Loads data into neo4j from a number of sources.'''
-    files = []
-
-    # Get Organism data:
-    print 'Parsing NCBI Taxonomy'
-    files.append(ncbi_taxonomy_utils.load())
-
-    # Get Chemical and Reaction data:
-    chem_man = chemical_utils.ChemicalManager()
-    reac_man = reaction_utils.ReactionManager()
-
-    print 'Parsing MNXref'
-    mnx_loader = mnxref_utils.MnxRefLoader(chem_man, reac_man)
-    files.append(mnx_loader.load())
-
-    # Get Chemical data:
-    print 'Parsing ChEBI'
-    files.append(chebi_utils.load(chem_man))
-
-    # Get Spectrum data:
-    print 'Parsing spectrum data'
-    files.append(spectra_utils.load(chem_man))
-
-    # Get Reaction / Enzyme / Organism data:
-    print 'Parsing KEGG'
-    kegg_utils.load(reac_man)
-
-    print 'Parsing Rhea'
-    rhea_utils.load(reac_man)
-
-    files.append(chem_man.get_files())
-    files.append(reac_man.get_files())
+    files = _get_csv_files()
 
     print 'Creating DB'
-    _create_db(db_loc, files)
+    create_db(db_loc, files)
 
     print 'Indexing DB'
-    _index_db(db_loc)
+    index_db(db_loc)
 
 
-def _create_db(db_loc, files):
+def create_db(db_loc, files):
     '''Creates the database from csv files.'''
     if os.path.exists(db_loc):
         shutil.rmtree(db_loc)
@@ -80,7 +50,7 @@ def _create_db(db_loc, files):
     subprocess.call(params)
 
 
-def _index_db(db_loc):
+def index_db(db_loc):
     '''Index database.'''
     directory = os.path.dirname(os.path.realpath(__file__))
     filename = os.path.join(directory, 'init.cql')
@@ -91,9 +61,51 @@ def _index_db(db_loc):
             subprocess.call(params)
 
 
+def _get_csv_files():
+    '''Create csv files.'''
+    files = []
+
+    # Get Organism data:
+    print 'Parsing NCBI Taxonomy'
+    files.append(ncbi_taxonomy_utils.load())
+
+    # Get Chemical and Reaction data:
+    chem_man = chemical_utils.ChemicalManager()
+    reac_man = reaction_utils.ReactionManager()
+
+    print 'Parsing MNXref'
+    mnx_loader = mnxref_utils.MnxRefLoader(chem_man, reac_man)
+    files.append(mnx_loader.load())
+
+    # Get Chemical data:
+    print 'Parsing ChEBI'
+    files.append(chebi_utils.load(chem_man))
+
+    # Get Spectrum data:
+    # print 'Parsing spectrum data'
+    # files.append(spectra_utils.load(chem_man))
+
+    # Get Reaction / Enzyme / Organism data:
+    print 'Parsing KEGG'
+    kegg_utils.load(reac_man)
+
+    print 'Parsing Rhea'
+    rhea_utils.load(reac_man)
+
+    files.append(chem_man.get_files())
+    files.append(reac_man.get_files())
+
+    return files
+
+
 def main(argv):
     '''main method'''
-    build(*argv)
+    if len(argv) == 2 and argv[0] == '--index':
+        index_db(argv[1])
+    elif len(argv) > 2 and argv[0] == '--create':
+        create_db(argv[1], argv[2:])
+    else:
+        build_db(argv[0])
 
 if __name__ == '__main__':
     main(sys.argv[1:])
