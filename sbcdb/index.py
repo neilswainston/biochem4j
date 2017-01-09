@@ -25,7 +25,7 @@ def index_db(db_loc):
 
 def main(argv):
     '''main method'''
-    index_db(argv[1])
+    index_db(argv[0])
 
 if __name__ == '__main__':
     main(sys.argv[1:])
