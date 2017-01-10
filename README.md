@@ -1,2 +1,2 @@
-# SYNBIOCHEM-DB
-SYNBIOCHEM-DB: A graph database to enable metabolic engineering and synthetic biology
+# biochem4j
+biochem4j: integrated and extensible biochemical knowledge through graph databases
