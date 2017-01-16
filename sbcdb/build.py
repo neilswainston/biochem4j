@@ -14,7 +14,6 @@ import sys
 
 from sbcdb import index, chebi_utils, chemical_utils, kegg_utils, \
     mnxref_utils, ncbi_taxonomy_utils, reaction_utils, rhea_utils
-# , spectra_utils
 
 
 def build_db(db_loc):
