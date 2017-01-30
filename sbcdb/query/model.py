@@ -15,23 +15,26 @@ import urllib
 
 from libsbml import CVTerm, SBMLDocument, writeSBMLToFile, \
     BIOLOGICAL_QUALIFIER, BQB_IS
-from synbiochem.utils import net_utils
+from synbiochem.utils import net_utils, seq_utils
 
 
 def get_document(params):
     '''Gets a model.'''
     document = SBMLDocument(2, 5)
     model = document.createModel()
-    cmpt = model.createCompartment()
-    cmpt.setId('c')
-    cmpt.setSize(1)
+    _add_compartment(model, 'c')
 
     nodes = defaultdict(dict)
     rels = []
+    react_to_uniprot = {}
 
     for param in params:
-        data = json.loads(_get_reaction(param))
+        ids = param.split(':')
+        data = json.loads(_get_reaction(ids[0]))
         _parse(data, nodes, rels)
+
+        if len(ids) > 1:
+            react_to_uniprot[_get_id(ids[0])] = ids[1]
 
     for cid, chemical in nodes['c'].iteritems():
         _add_species(model, cid, chemical)
@@ -42,6 +45,9 @@ def get_document(params):
     for rel in rels:
         _add_species_ref(model, str(rel[0]), str(rel[2]),
                          rel[1]['stoichiometry'])
+
+    for react_id, uniprot_id in react_to_uniprot.iteritems():
+        _add_modifier(model, react_id, uniprot_id)
 
     return document
 
@@ -99,38 +105,81 @@ def _get_id(cid):
     return '_' + re.sub('\\W', '_', cid)
 
 
-def _add_species(model, cid, data):
+def _add_compartment(model, cid):
+    '''Adds a compartment.'''
+    cmpt = model.createCompartment()
+    cmpt.setId(cid)
+    cmpt.setSize(1)
+
+
+def _add_species(model, cid, data, sbo=247):
     '''Adds a species.'''
     spec = model.createSpecies()
-    _init_sbase(spec, cid, data)
-    spec.setSBOTerm(247)
-    spec.setName(str(data['name']))
+    _init_sbase(spec, cid, data, sbo)
+    spec.setSBOTerm(sbo)
+
+    if 'name' in data:
+        spec.setName(str(data['name']))
+
     spec.setCompartment('c')
     spec.setInitialConcentration(0)
+
+    return spec
 
 
 def _add_reaction(model, cid, data):
     '''Adds a reaction.'''
     react = model.createReaction()
-    _init_sbase(react, cid, data)
-    react.setSBOTerm(167)
+    _init_sbase(react, cid, data, 167)
+    return react
 
 
 def _add_species_ref(model, react_id, spec_id, stoic):
     '''Adds species reference.'''
-    react = model.getReaction(react_id)
+    reaction = model.getReaction(react_id)
 
     if stoic > 0:
-        react.addProduct(model.getSpecies(spec_id), stoic)
+        reaction.addProduct(model.getSpecies(spec_id), stoic)
+
+        for ref in reaction.getListOfProducts():
+            ref.setSBOTerm(11)
     else:
-        react.addReactant(model.getSpecies(spec_id), abs(stoic))
+        reaction.addReactant(model.getSpecies(spec_id), abs(stoic))
+
+        for ref in reaction.getListOfReactants():
+            ref.setSBOTerm(10)
 
 
-def _init_sbase(sbase, cid, data):
+def _add_modifier(model, react_id, uniprot_id):
+    '''Adds a modifier.'''
+    reaction = model.getReaction(react_id)
+    cid = _get_id(uniprot_id)
+    spec = model.getSpecies(cid)
+
+    if spec is None:
+        data = {'uniprot': uniprot_id}
+
+        uniprot_vals = seq_utils.get_uniprot_values([uniprot_id],
+                                                    ['protein names'])
+
+        names = uniprot_vals[uniprot_id].get('Protein names', [])
+
+        if len(names) > 0:
+            data['name'] = names[0]
+
+        spec = _add_species(model, cid, data, sbo=252)
+
+    reaction.addModifier(spec)
+
+    for ref in reaction.getListOfModifiers():
+        ref.setSBOTerm(13)
+
+
+def _init_sbase(sbase, cid, data, sbo):
     '''Initialises an sbase.'''
-    sbase.setSBOTerm(247)
     sbase.setId(str(cid))
     sbase.setMetaId('_meta' + str(cid))
+    sbase.setSBOTerm(sbo)
     _add_identifiers(data, sbase)
 
 
