@@ -34,30 +34,14 @@ def get_document(params):
         _parse(data, nodes, rels)
 
     for cid, chemical in nodes['c'].iteritems():
-        spec = model.createSpecies()
-        spec.setSBOTerm(247)
-        spec.setId(str(cid))
-        spec.setMetaId('_meta' + str(cid))
-        spec.setName(str(chemical['name']))
-        spec.setCompartment('c')
-        spec.setInitialConcentration(0)
-        _add_identifiers(chemical, spec)
+        _add_species(model, cid, chemical)
 
     for cid, reaction in nodes['r'].iteritems():
-        react = model.createReaction()
-        react.setSBOTerm(167)
-        react.setId(str(cid))
-        react.setMetaId('_meta' + str(cid))
-        _add_identifiers(reaction, react)
+        _add_reaction(model, cid, reaction)
 
     for rel in rels:
-        react = model.getReaction(str(rel[0]))
-        stoic = rel[1]['stoichiometry']
-
-        if stoic > 0:
-            react.addProduct(model.getSpecies(str(rel[2])), stoic)
-        else:
-            react.addReactant(model.getSpecies(str(rel[2])), abs(stoic))
+        _add_species_ref(model, str(rel[0]), str(rel[2]),
+                         rel[1]['stoichiometry'])
 
     return document
 
@@ -115,17 +99,57 @@ def _get_id(cid):
     return '_' + re.sub('\\W', '_', cid)
 
 
+def _add_species(model, cid, data):
+    '''Adds a species.'''
+    spec = model.createSpecies()
+    _init_sbase(spec, cid, data)
+    spec.setSBOTerm(247)
+    spec.setName(str(data['name']))
+    spec.setCompartment('c')
+    spec.setInitialConcentration(0)
+
+
+def _add_reaction(model, cid, data):
+    '''Adds a reaction.'''
+    react = model.createReaction()
+    _init_sbase(react, cid, data)
+    react.setSBOTerm(167)
+
+
+def _add_species_ref(model, react_id, spec_id, stoic):
+    '''Adds species reference.'''
+    react = model.getReaction(react_id)
+
+    if stoic > 0:
+        react.addProduct(model.getSpecies(spec_id), stoic)
+    else:
+        react.addReactant(model.getSpecies(spec_id), abs(stoic))
+
+
+def _init_sbase(sbase, cid, data):
+    '''Initialises an sbase.'''
+    sbase.setSBOTerm(247)
+    sbase.setId(str(cid))
+    sbase.setMetaId('_meta' + str(cid))
+    _add_identifiers(data, sbase)
+
+
 def _add_identifiers(properties, sbase):
     '''Gets semantic identifiers.'''
     for key, value in properties.iteritems():
         url = 'http://identifiers.org/' + key + '/' + str(value)
 
         if urllib.urlopen(url).getcode() == 200:
-            cv_term = CVTerm()
-            cv_term.setQualifierType(BIOLOGICAL_QUALIFIER)
-            cv_term.setBiologicalQualifierType(BQB_IS)
-            cv_term.addResource(str(url))
-            sbase.addCVTerm(cv_term)
+            _add_cv_term(url, sbase)
+
+
+def _add_cv_term(url, sbase):
+    '''Adds a CVTerm.'''
+    cv_term = CVTerm()
+    cv_term.setQualifierType(BIOLOGICAL_QUALIFIER)
+    cv_term.setBiologicalQualifierType(BQB_IS)
+    cv_term.addResource(str(url))
+    sbase.addCVTerm(cv_term)
 
 
 def main(args):
