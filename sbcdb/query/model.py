@@ -8,14 +8,15 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 @author:  neilswainston
 '''
 from _collections import defaultdict
-import json
 import re
 import sys
 import urllib
 
 from libsbml import CVTerm, SBMLDocument, writeSBMLToFile, \
     BIOLOGICAL_QUALIFIER, BQB_IS
-from synbiochem.utils import net_utils, seq_utils
+from synbiochem.utils import seq_utils
+
+from sbcdb import query
 
 
 def get_document(params):
@@ -30,7 +31,7 @@ def get_document(params):
 
     for param in params:
         ids = param.split(':')
-        data = json.loads(_get_reaction(ids[0]))
+        data = _get_reaction(ids[0])
         _parse(data, nodes, rels)
 
         if len(ids) > 1:
@@ -54,21 +55,12 @@ def get_document(params):
 
 def _get_reaction(reac_id):
     '''Gets a reaction.'''
-    url = 'http://www.biochem4j.org/db/data/transaction/commit'
-    query = 'MATCH (r:Reaction {id: {reac_id}})-[rel]-(c:Chemical) ' + \
+    qry = 'MATCH (r:Reaction {id: {reac_id}})-[rel]-(c:Chemical) ' + \
         'RETURN r, rel, c'
 
-    data = {'statements': [
-        {
-            'statement': query,
-            'parameters': {'reac_id': reac_id}
-        }
-    ]}
+    parameters = {'reac_id': reac_id}
 
-    headers = {'Accept': 'application/json; charset=UTF-8',
-               'Content-Type': 'application/json'}
-
-    return net_utils.post(url, json.dumps(data), headers)
+    return query.run_query(qry, parameters)
 
 
 def _parse(data, nodes, rels):
