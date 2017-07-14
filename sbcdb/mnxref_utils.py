@@ -17,7 +17,8 @@ import math
 import re
 import urllib2
 
-from synbiochem.utils import chem_utils as chem_utils
+from subliminal import balance
+from synbiochem.utils import chem_utils
 import numpy
 
 from sbcdb import namespace_utils, utils
@@ -38,21 +39,15 @@ class MnxRefReader(object):
 
     def get_chem_data(self):
         '''Gets chemical data.'''
-        if len(self.__chem_data) == 0:
+        if not self.__chem_data:
             self.__read_chem_prop()
             self.__read_xref('chem_xref.tsv', self.__chem_data, True)
-
-            # Add missing xrefs:
-            self.__add_xref(['chebi', '28938'],
-                            self.__chem_data['MNXM84'], True)  # NH4
-            self.__add_xref(['chebi', '30616'],
-                            self.__chem_data['MNXM114062'], True)  # ATP
 
         return self.__chem_data
 
     def get_reac_data(self):
         '''Gets reaction data.'''
-        if len(self.__reac_data) == 0:
+        if not self.__reac_data:
             self.__read_reac_prop()
             self.__read_xref('reac_xref.tsv', self.__reac_data, False)
 
@@ -101,7 +96,7 @@ class MnxRefReader(object):
             xref[1] = self.__parse_id(xref[1])
 
             entry[namespace] = xref[1] \
-                if namespace is not 'chebi' \
+                if namespace != 'chebi' \
                 else 'CHEBI:' + xref[1]
 
     def __read_reac_prop(self):
@@ -198,7 +193,7 @@ class MnxRefLoader(object):
                                  chem_id])
 
             if all([values[0] is not None for values in reac_def]):
-                balanced, _, balanced_def = chem_utils.balance(reac_def)
+                balanced, _, balanced_def = balance.balance_reac(reac_def)
                 properties['balance'] = balanced
             else:
                 properties['balance'] = 'unknown'
@@ -274,8 +269,10 @@ def _filter(counter, cutoff):
 
 def _convert_to_float(dictionary, key):
     '''Converts a key value in a dictionary to a float.'''
-    if len(dictionary.get(key, '')):
-        dictionary[key] = float(dictionary[key])
+    if dictionary.get(key, None):
+        dictionary[key] = float(dictionary[key]
+                                if dictionary[key] != 'NA'
+                                else 'NaN')
     else:
         # Remove key:
         dictionary.pop(key, None)

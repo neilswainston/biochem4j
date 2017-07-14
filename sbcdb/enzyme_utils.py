@@ -48,12 +48,12 @@ class EnzymeManager(object):
             if 'Protein names' in uniprot_value:
                 enzyme_node['names'] = uniprot_value['Protein names']
 
-                if len(enzyme_node['names']) > 0:
+                if enzyme_node['names']:
                     enzyme_node['name'] = enzyme_node['names'][0]
 
             if 'EC number' in uniprot_value:
                 enzyme_node['ec-code'] = uniprot_value['EC number']
 
-            if organism_id is not None and len(organism_id) > 0:
+            if organism_id:
                 self.__org_enz_rels.append([organism_id, 'expresses',
                                             uniprot_id, {'source': source}])

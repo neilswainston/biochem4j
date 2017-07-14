@@ -14,7 +14,7 @@ import tempfile
 
 def write_nodes(nodes, group):
     '''Writes Nodes to csv file.'''
-    if not len(nodes):
+    if not nodes:
         return None
 
     fle = tempfile.NamedTemporaryFile(suffix='.txt', prefix=group + '_',
@@ -35,7 +35,7 @@ def write_nodes(nodes, group):
 
 def write_rels(rels, group_start, group_end):
     '''Writes Relationships to csv file.'''
-    if not len(rels):
+    if not rels:
         return None
 
     fle = tempfile.NamedTemporaryFile(delete=False)
@@ -62,7 +62,7 @@ def _get_value(value):
     if isinstance(value, Iterable):
         if not isinstance(value, str) and not isinstance(value, unicode):
             return ';'.join([_get_value(val) for val in value])
-        else:
-            return value.encode('utf-8')
+
+        return value.encode('utf-8')
 
     return str(value)
