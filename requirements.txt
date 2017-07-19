@@ -1,2 +1,2 @@
 libchebipy
-synbiochem-py
+subliminal-py
