@@ -1,11 +1,13 @@
-FROM python:2.7
+FROM neo4j
+
+ENV PATH .:${PATH}
 
 # Make current directory visible inside Docker container:
-COPY . /biochem4j
+COPY . /
+WORKDIR /
 
-# Install / update relevant ubuntu packages:
-RUN apt-get update \
-	&& apt-get install -y --no-install-recommends build-essential curl libgmp3-dev python-pip
+# Install / update relevant alpine packages:
+RUN apk add --no-cache --update alpine-sdk gmp-dev openblas-dev libxml2-dev libxslt-dev python2-dev py-pip
 
 # Download and install glpk:
 RUN mkdir /usr/local/glpk \
@@ -15,9 +17,7 @@ RUN mkdir /usr/local/glpk \
 	&& ./configure \
 	&& make \
 	&& make install
-
-WORKDIR /biochem4j
-
+	
 # Install pyglpk:
 RUN pip install --upgrade pip \
 	&& pip install setuptools \
@@ -29,4 +29,4 @@ ENV PYTHONPATH $PYTHONPATH:.
 
 # Run:
 ENTRYPOINT ["python"]
-CMD ["-u", "sbcdb/build.py", "/biochem4j/neo4j/csv"]
+CMD ["-u", "sbcdb/build.py", "/neo4j/data/databases/graph.db"]

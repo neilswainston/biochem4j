@@ -14,7 +14,6 @@ from libchebipy._chebi_entity import ChebiEntity, ChebiException
 from synbiochem.utils import chem_utils
 
 from sbcdb import namespace_utils as ns_utils
-from sbcdb import utils
 
 
 class ChemicalManager(object):
@@ -25,10 +24,9 @@ class ChemicalManager(object):
         self.__nodes = {}
         self.__chem_ids = {}
 
-    def get_files(self):
+    def write_files(self, writer):
         '''Gets neo4j import files.'''
-        return ([utils.write_nodes(self.__nodes.values(), 'Chemical')],
-                [])
+        return writer.write_nodes(self.__nodes.values(), 'Chemical')
 
     def add_chemical(self, properties):
         '''Adds a chemical to the collection of nodes, ensuring uniqueness.'''

@@ -9,17 +9,15 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 '''
 from libchebipy._chebi_entity import ChebiEntity
 
-from sbcdb import utils
 
-
-def load(chem_manager):
+def load(chem_manager, writer):
     '''Loads ChEBI data from libChEBIpy.'''
     chebi_ids = []
     rels = []
 
     _add_node('CHEBI:24431', chebi_ids, rels, chem_manager)
 
-    return [], [utils.write_rels(rels, 'Chemical', 'Chemical')]
+    writer.write_rels(rels, 'Chemical', 'Chemical')
 
 
 def _add_node(chebi_id, chebi_ids, rels, chem_manager):

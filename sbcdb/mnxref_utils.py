@@ -21,7 +21,7 @@ from subliminal import balance
 from synbiochem.utils import chem_utils
 import numpy
 
-from sbcdb import namespace_utils, utils
+from sbcdb import namespace_utils
 
 
 _METANETX_URL = 'http://metanetx.org/cgi-bin/mnxget/mnxref/'
@@ -153,9 +153,10 @@ class MnxRefReader(object):
 class MnxRefLoader(object):
     '''Loads MNXref data into neo4j format.'''
 
-    def __init__(self, chem_man, reac_man):
+    def __init__(self, chem_man, reac_man, writer):
         self.__chem_man = chem_man
         self.__reac_man = reac_man
+        self.__writer = writer
 
     def load(self):
         '''Loads MnxRef data from chem_prop.tsv, chem_xref.tsv,
@@ -168,7 +169,7 @@ class MnxRefLoader(object):
 
         rels = self.__add_reac_nodes(reader.get_reac_data())
 
-        return [], [utils.write_rels(rels, 'Reaction', 'Chemical')]
+        return [], [self.__writer.write_rels(rels, 'Reaction', 'Chemical')]
 
     def __add_reac_nodes(self, reac_data):
         '''Get reaction nodes from data.'''

@@ -9,4 +9,4 @@ docker run \
 --volume=$DIR/neo4j/data:/data \
 -e NEO4J_AUTH=none \
 -e EXTENSION_SCRIPT=/data/extension/extension_script.sh \
-neo4j:3.2
+neo4j
