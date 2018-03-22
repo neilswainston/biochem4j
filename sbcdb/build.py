@@ -7,13 +7,14 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 
 @author:  neilswainston
 '''
+import multiprocessing
 import sys
 
 from sbcdb import chebi_utils, chemical_utils, kegg_utils, mnxref_utils, \
     ncbi_taxonomy_utils, reaction_utils, rhea_utils, spectra_utils, utils
 
 
-def build_csv(dest_dir):
+def build_csv(dest_dir, num_threads):
     '''Build database CSV files.'''
     writer = utils.Writer(dest_dir)
 
@@ -41,7 +42,7 @@ def build_csv(dest_dir):
 
     # Get Reaction / Enzyme / Organism data:
     print 'Parsing KEGG'
-    kegg_utils.load(reac_man)
+    kegg_utils.load(reac_man, num_threads=num_threads)
 
     print 'Parsing Rhea'
     rhea_utils.load(reac_man)
@@ -49,9 +50,20 @@ def build_csv(dest_dir):
     reac_man.write_files(writer)
 
 
-def main(argv):
+def main(args):
     '''main method'''
-    build_csv(argv[0])
+    num_threads = 0
+
+    if len(args) > 1:
+        try:
+            num_threads = int(args[1])
+        except ValueError:
+            if args[1] == 'True':
+                num_threads = multiprocessing.cpu_count()
+
+    print 'Running build with %d threads' % num_threads
+
+    build_csv(args[0], num_threads)
 
 
 if __name__ == '__main__':

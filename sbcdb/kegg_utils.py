@@ -9,9 +9,10 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 '''
 from collections import defaultdict
 import urllib2
+from synbiochem.utils import thread_utils
 
 
-def load(reaction_manager, organisms=None):
+def load(reaction_manager, organisms=None, num_threads=0):
     '''Loads KEGG data.'''
 
     if organisms is None:
@@ -20,12 +21,12 @@ def load(reaction_manager, organisms=None):
                     urllib2.urlopen('http://rest.kegg.jp/list/organism')])
 
     # EC to gene, gene to Uniprot:
-    ec_genes, gene_uniprots = _get_gene_data(organisms)
+    ec_genes, gene_uniprots = _get_gene_data(organisms, num_threads)
 
     data = defaultdict(list)
 
     # KEGG Reaction to EC:
-    kegg_reac_ec = _parse('http://rest.kegg.jp/link/ec/reaction')
+    kegg_reac_ec = _parse_url('http://rest.kegg.jp/link/ec/reaction')
 
     for kegg_reac, ec_terms in kegg_reac_ec.iteritems():
         for ec_term in ec_terms:
@@ -38,7 +39,39 @@ def load(reaction_manager, organisms=None):
     reaction_manager.add_react_to_enz(data, 'kegg.reaction')
 
 
-def _parse(url, attempts=128):
+def _get_gene_data(organisms, num_threads):
+    '''Gets gene data.'''
+    ec_genes = defaultdict(list)
+    gene_uniprots = defaultdict(list)
+
+    if num_threads:
+        thread_pool = thread_utils.ThreadPool(num_threads)
+
+        for org in organisms:
+            thread_pool.add_task(_parse_organism, org, ec_genes, gene_uniprots)
+
+        thread_pool.wait_completion()
+    else:
+        for org in organisms:
+            _parse_organism(org, ec_genes, gene_uniprots)
+
+    return ec_genes, gene_uniprots
+
+
+def _parse_organism(org, ec_genes, gene_uniprots):
+    '''Parse organism.'''
+    print 'KEGG: loading ' + org
+
+    for key, value in _parse_url('http://rest.kegg.jp/link/' + org.lower() +
+                                 '/enzyme').iteritems():
+        ec_genes[key].extend(value)
+
+    for key, value in _parse_url('http://rest.kegg.jp/conv/uniprot/' +
+                                 org.lower()).iteritems():
+        gene_uniprots[key].extend(value)
+
+
+def _parse_url(url, attempts=16):
     '''Parses url to form key to list of values dictionary.'''
     data = defaultdict(list)
 
@@ -56,22 +89,3 @@ def _parse(url, attempts=128):
             print '\t'.join([url, str(err)])
 
     return data
-
-
-def _get_gene_data(organisms):
-    '''Gets gene data.'''
-    ec_genes = defaultdict(list)
-    gene_uniprots = defaultdict(list)
-
-    for org in organisms:
-        print 'KEGG: loading ' + org
-
-        for key, value in _parse('http://rest.kegg.jp/link/' + org.lower() +
-                                 '/enzyme').iteritems():
-            ec_genes[key].extend(value)
-
-        for key, value in _parse('http://rest.kegg.jp/conv/uniprot/' +
-                                 org.lower()).iteritems():
-            gene_uniprots[key].extend(value)
-
-    return ec_genes, gene_uniprots
