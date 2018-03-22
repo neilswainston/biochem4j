@@ -8,16 +8,14 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 @author:  neilswainston
 '''
 from decimal import Decimal
-from urllib import urlretrieve
 import json
 import os
 import sys
 import tempfile
+from urllib import urlretrieve
 import zipfile
 
 import ijson
-
-from sbcdb import utils
 
 
 __MONA_URL = 'http://mona.fiehnlab.ucdavis.edu/rest/downloads/retrieve/' + \
@@ -30,7 +28,7 @@ _NAME_MAP = {'kegg': 'kegg.compound',
              'total exact mass': 'monoisotopic_mass:float'}
 
 
-def load(chem_manager, url=__MONA_URL, filename=__MONA_FILENAME):
+def load(writer, chem_manager, url=__MONA_URL, filename=__MONA_FILENAME):
     '''Build Spectrum nodes and relationships.'''
     nodes = []
     rels = []
@@ -42,8 +40,8 @@ def load(chem_manager, url=__MONA_URL, filename=__MONA_FILENAME):
         nodes.append(record['spectrum'])
         rels.append([chem_id, 'has', record['spectrum']['id:ID(Spectrum)']])
 
-    return [utils.write_nodes(nodes, 'Spectrum')], \
-        [utils.write_rels(rels, 'Chemical', 'Spectrum')]
+    return [writer.write_nodes(nodes, 'Spectrum')], \
+        [writer.write_rels(rels, 'Chemical', 'Spectrum')]
 
 
 def _parse(filename):

@@ -10,7 +10,7 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 import sys
 
 from sbcdb import chebi_utils, chemical_utils, kegg_utils, mnxref_utils, \
-    ncbi_taxonomy_utils, reaction_utils, rhea_utils, utils
+    ncbi_taxonomy_utils, reaction_utils, rhea_utils, spectra_utils, utils
 
 
 def build_csv(dest_dir):
@@ -20,19 +20,18 @@ def build_csv(dest_dir):
     # Get Organism data:
     print 'Parsing NCBI Taxonomy'
     ncbi_taxonomy_utils.load(writer)
-    print 'Parsed NCBI Taxonomy'
 
     # Get Chemical and Reaction data:
     reac_man = _write_chem_csv_files(writer)
 
     # Get Reaction / Enzyme / Organism data:
-    # print 'Parsing KEGG'
-    # kegg_utils.load(reac_man)
+    print 'Parsing KEGG'
+    kegg_utils.load(reac_man)
 
-    # print 'Parsing Rhea'
-    # rhea_utils.load(reac_man)
+    print 'Parsing Rhea'
+    rhea_utils.load(reac_man)
 
-    # reac_man.get_files()
+    reac_man.get_files()
 
 
 def _write_chem_csv_files(writer):
@@ -48,8 +47,8 @@ def _write_chem_csv_files(writer):
     chebi_utils.load(chem_man, writer)
 
     # Get Spectrum data:
-    # print 'Parsing spectrum data'
-    # spectra_utils.load(chem_man)
+    print 'Parsing spectrum data'
+    spectra_utils.load(writer, chem_man)
 
     chem_man.write_files(writer)
 

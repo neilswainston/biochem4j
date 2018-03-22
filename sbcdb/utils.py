@@ -8,9 +8,9 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 @author:  neilswainston
 '''
 from collections import Iterable
-from shutil import rmtree
 import csv
 import os
+from shutil import rmtree
 import time
 
 
@@ -19,6 +19,7 @@ class Writer(object):
 
     def __init__(self, dest_dir):
         self.__dest_dir = dest_dir
+
         if os.path.exists(self.__dest_dir):
             rmtree(self.__dest_dir)
 

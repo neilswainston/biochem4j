@@ -17,9 +17,9 @@ import math
 import re
 import urllib2
 
+import numpy
 from subliminal import balance
 from synbiochem.utils import chem_utils
-import numpy
 
 from sbcdb import namespace_utils
 

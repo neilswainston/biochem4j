@@ -21,7 +21,6 @@ __NCBITAXONOMY_URL = 'ftp://ftp.ncbi.nih.gov/pub/taxonomy/taxdump.tar.gz'
 def load(writer, source=__NCBITAXONOMY_URL):
     '''Loads NCBI Taxonomy data.'''
     nodes_filename, names_filename = _get_ncbi_taxonomy_files(source)
-    print nodes_filename
     nodes, rels = _parse_nodes(nodes_filename)
     _parse_names(nodes, names_filename)
 
