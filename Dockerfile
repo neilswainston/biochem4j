@@ -2,10 +2,11 @@ FROM python:2.7
 
 # Make current directory visible inside Docker container:
 COPY . /biochem4j
+WORKDIR /biochem4j
 
 # Install / update relevant ubuntu packages:
 RUN apt-get update \
-	&& apt-get install -y --no-install-recommends build-essential curl libgmp3-dev python-pip
+	&& apt-get install -y --no-install-recommends build-essential unzip wget libgmp3-dev python-pip
 
 # Download and install glpk:
 RUN mkdir /usr/local/glpk \
@@ -16,11 +17,8 @@ RUN mkdir /usr/local/glpk \
 	&& make \
 	&& make install
 
-WORKDIR /biochem4j
-
-# Install pyglpk:
+# Install requirements:
 RUN pip install --upgrade pip \
-	&& pip install setuptools \
 	&& pip install -r requirements.txt
 
 # Update paths:
@@ -28,5 +26,4 @@ ENV LD_LIBRARY_PATH /usr/local/lib:${LD_LIBRARY_PATH}
 ENV PYTHONPATH $PYTHONPATH:.
 
 # Run:
-ENTRYPOINT ["python"]
-CMD ["-u", "sbcdb/build.py", "/biochem4j/neo4j/csv"]
+ENTRYPOINT ["python", "-u", "sbcdb/build.py"]

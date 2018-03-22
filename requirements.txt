@@ -1,2 +1,4 @@
+ijson
+glpk
 libchebipy
 subliminal-py
