@@ -21,6 +21,7 @@ def load(reaction_manager, organisms=None, num_threads=0):
                     urllib2.urlopen('http://rest.kegg.jp/list/organism')])
 
     # EC to gene, gene to Uniprot:
+    organisms = organisms[:64]
     ec_genes, gene_uniprots = _get_gene_data(organisms, num_threads)
 
     data = defaultdict(list)
@@ -36,7 +37,7 @@ def load(reaction_manager, organisms=None, num_threads=0):
                         uniprots = [val[3:] for val in gene_uniprots[gene]]
                         data[kegg_reac[3:]].extend(uniprots)
 
-    reaction_manager.add_react_to_enz(data, 'kegg.reaction')
+    reaction_manager.add_react_to_enz(data, 'kegg.reaction', num_threads)
 
 
 def _get_gene_data(organisms, num_threads):

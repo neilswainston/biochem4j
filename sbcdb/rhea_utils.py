@@ -14,13 +14,13 @@ import urllib
 __RHEA_URL = 'ftp://ftp.ebi.ac.uk/pub/databases/rhea/tsv/rhea2uniprot.tsv'
 
 
-def load(reaction_manager, source=__RHEA_URL):
+def load(reaction_manager, source=__RHEA_URL, num_threads=0):
     '''Loads Rhea data.'''
     # Parse data:
     temp_file = tempfile.NamedTemporaryFile()
     urllib.urlretrieve(source, temp_file.name)
     data = _parse(temp_file.name)
-    reaction_manager.add_react_to_enz(data, 'rhea')
+    reaction_manager.add_react_to_enz(data, 'rhea', num_threads)
 
 
 def _parse(filename):

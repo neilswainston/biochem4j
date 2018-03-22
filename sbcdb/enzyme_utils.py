@@ -26,7 +26,7 @@ class EnzymeManager(object):
         '''Gets organism-to-enzyme relationships.'''
         return self.__org_enz_rels
 
-    def add_uniprot_data(self, enzyme_ids, source):
+    def add_uniprot_data(self, enzyme_ids, source, num_threads=0):
         '''Gets Uniprot data.'''
 
         fields = ['entry name', 'protein names', 'organism-id', 'ec']
@@ -34,7 +34,8 @@ class EnzymeManager(object):
                       if enzyme_id not in self.__nodes]
         uniprot_values = seq_utils.get_uniprot_values(enzyme_ids, fields,
                                                       batch_size=512,
-                                                      verbose=True)
+                                                      verbose=True,
+                                                      num_threads=num_threads)
 
         for uniprot_id, uniprot_value in uniprot_values.iteritems():
             enzyme_node = {':LABEL': 'Enzyme',

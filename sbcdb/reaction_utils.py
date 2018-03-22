@@ -58,13 +58,13 @@ class ReactionManager(object):
 
         return reac_id
 
-    def add_react_to_enz(self, data, source):
+    def add_react_to_enz(self, data, source, num_threads=0):
         '''Submit data to the graph.'''
         # Create Reaction and Enzyme nodes:
         enzyme_ids = self.__create_react_enz(data, source)
 
         # Create Enzyme nodes:
-        self.__enz_man.add_uniprot_data(enzyme_ids, source)
+        self.__enz_man.add_uniprot_data(enzyme_ids, source, num_threads)
 
     def __create_react_enz(self, data, source):
         '''Creates Reaction and Enzyme nodes and their Relationships.'''
