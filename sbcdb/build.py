@@ -22,19 +22,6 @@ def build_csv(dest_dir):
     ncbi_taxonomy_utils.load(writer)
 
     # Get Chemical and Reaction data:
-    reac_man = _write_chem_csv_files(writer)
-
-    # Get Reaction / Enzyme / Organism data:
-    print 'Parsing KEGG'
-    kegg_utils.load(reac_man)
-
-    print 'Parsing Rhea'
-    rhea_utils.load(reac_man)
-
-    reac_man.get_files()
-
-
-def _write_chem_csv_files(writer):
     '''Write chemistry csv files.'''
     chem_man = chemical_utils.ChemicalManager()
     reac_man = reaction_utils.ReactionManager()
@@ -52,7 +39,14 @@ def _write_chem_csv_files(writer):
 
     chem_man.write_files(writer)
 
-    return reac_man
+    # Get Reaction / Enzyme / Organism data:
+    print 'Parsing KEGG'
+    kegg_utils.load(reac_man)
+
+    print 'Parsing Rhea'
+    rhea_utils.load(reac_man)
+
+    reac_man.write_files(writer)
 
 
 def main(argv):

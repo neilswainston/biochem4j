@@ -11,27 +11,31 @@ from collections import Iterable
 import csv
 import os
 from shutil import rmtree
-import time
 
 
 class Writer(object):
     '''CSV file writer class for biochem4j files.'''
 
     def __init__(self, dest_dir):
-        self.__dest_dir = dest_dir
+        self.__nodes_dir = os.path.join(os.path.abspath(dest_dir), 'nodes')
+        self.__rels_dir = os.path.join(os.path.abspath(dest_dir), 'rels')
 
-        if os.path.exists(self.__dest_dir):
-            rmtree(self.__dest_dir)
+        if os.path.exists(self.__nodes_dir):
+            rmtree(self.__nodes_dir)
 
-        os.makedirs(self.__dest_dir)
+        os.makedirs(self.__nodes_dir)
+
+        if os.path.exists(self.__rels_dir):
+            rmtree(self.__rels_dir)
+
+        os.makedirs(self.__rels_dir)
 
     def write_nodes(self, nodes, group):
         '''Writes Nodes to csv file.'''
         if not nodes:
             return None
 
-        filename = os.path.join(self.__dest_dir,
-                                str(time.time()) + '_nodes_' + group + '.txt')
+        filename = os.path.join(self.__nodes_dir, group + '.csv')
 
         nodes = [{key: _get_value(value) for key, value in node.iteritems()}
                  for node in nodes]
@@ -50,9 +54,8 @@ class Writer(object):
         if not rels:
             return None
 
-        filename = os.path.join(self.__dest_dir,
-                                str(time.time()) + '_rels_' + group_start +
-                                '_' + group_end + '.txt')
+        filename = os.path.join(self.__rels_dir,
+                                group_start + '_' + group_end + '.csv')
 
         all_keys = [x.keys()
                     for rel in rels for x in rel if isinstance(x, dict)]

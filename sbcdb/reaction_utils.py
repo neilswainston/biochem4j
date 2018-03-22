@@ -13,25 +13,24 @@ from sbcdb.enzyme_utils import EnzymeManager
 class ReactionManager(object):
     '''Class to implement a manager of Reaction data.'''
 
-    def __init__(self, writer):
+    def __init__(self):
         '''Constructor.'''
-        self.__writer = writer
         self.__nodes = {}
         self.__reac_ids = {}
         self.__reac_enz_rels = []
         self.__org_enz_rels = []
         self.__enz_man = EnzymeManager()
 
-    def get_files(self):
-        '''Gets neo4j import files.'''
-        return ([self.__writer.write_nodes(self.__nodes.values(),
-                                           'Reaction'),
-                 self.__writer.write_nodes(self.__enz_man.get_nodes(),
-                                           'Enzyme')],
-                [self.__writer.write_rels(self.__reac_enz_rels,
-                                          'Reaction', 'Enzyme'),
-                 self.__writer.write_rels(self.__enz_man.get_org_enz_rels(),
-                                          'Organism', 'Enzyme')])
+    def get_files(self, writer):
+        '''Write neo4j import files.'''
+        return ([writer.write_nodes(self.__nodes.values(),
+                                    'Reaction'),
+                 writer.write_nodes(self.__enz_man.get_nodes(),
+                                    'Enzyme')],
+                [writer.write_rels(self.__reac_enz_rels,
+                                   'Reaction', 'Enzyme'),
+                 writer.write_rels(self.__enz_man.get_org_enz_rels(),
+                                   'Organism', 'Enzyme')])
 
     def add_reaction(self, source, reac_id, properties):
         '''Adds a reaction to the collection of nodes, ensuring uniqueness.'''

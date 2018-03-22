@@ -55,7 +55,6 @@ def _parse_nodes(filename):
             tax_id = tokens[0]
 
             if tax_id != '1':
-                print tax_id
                 rels.append([tax_id, 'is_a', tokens[1]])
 
             nodes[tax_id] = {'taxonomy:ID(Organism)': tax_id,

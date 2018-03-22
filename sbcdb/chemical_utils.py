@@ -25,7 +25,7 @@ class ChemicalManager(object):
         self.__chem_ids = {}
 
     def write_files(self, writer):
-        '''Gets neo4j import files.'''
+        '''Write neo4j import files.'''
         return writer.write_nodes(self.__nodes.values(), 'Chemical')
 
     def add_chemical(self, properties):
