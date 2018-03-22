@@ -45,7 +45,7 @@ def build_csv(dest_dir, num_threads):
     kegg_utils.load(reac_man, num_threads=num_threads)
 
     print 'Parsing Rhea'
-    rhea_utils.load(reac_man)
+    rhea_utils.load(reac_man, num_threads=num_threads)
 
     reac_man.write_files(writer)
 

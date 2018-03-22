@@ -9,6 +9,7 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 '''
 from collections import defaultdict
 import urllib2
+
 from synbiochem.utils import thread_utils
 
 
