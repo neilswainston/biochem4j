@@ -6,7 +6,7 @@ WORKDIR /biochem4j
 
 # Install / update relevant ubuntu packages:
 RUN apt-get update \
-	&& apt-get install -y --no-install-recommends build-essential unzip wget libgmp3-dev python-pip
+	&& apt-get install -y --no-install-recommends libgmp3-dev
 
 # Download and install glpk:
 RUN mkdir /usr/local/glpk \
