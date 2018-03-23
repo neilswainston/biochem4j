@@ -41,7 +41,9 @@ class EnzymeManager(object):
             enzyme_node = {':LABEL': 'Enzyme',
                            'uniprot:ID(Enzyme)': uniprot_id}
             self.__nodes[uniprot_id] = enzyme_node
-            organism_id = uniprot_value.pop('Organism ID')
+
+            organism_id = uniprot_value.pop('Organism ID') \
+                if 'Organism ID' in uniprot_value else None
 
             if 'Entry name' in uniprot_value:
                 enzyme_node['entry'] = uniprot_value['Entry name']
