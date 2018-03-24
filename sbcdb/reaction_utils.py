@@ -21,7 +21,7 @@ class ReactionManager(object):
         self.__org_enz_rels = []
         self.__enz_man = EnzymeManager()
 
-    def get_files(self, writer):
+    def write_files(self, writer):
         '''Write neo4j import files.'''
         return ([writer.write_nodes(self.__nodes.values(),
                                     'Reaction'),
