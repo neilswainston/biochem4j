@@ -22,8 +22,8 @@ def build_csv(dest_dir, num_threads):
     print 'Parsing NCBI Taxonomy'
     ncbi_taxonomy_utils.load(writer)
 
-    # Get Chemical and Reaction data:
-    '''Write chemistry csv files.'''
+    # Get Chemical and Reaction data.
+    # Write chemistry csv files:
     chem_man = chemical_utils.ChemicalManager()
     reac_man = reaction_utils.ReactionManager()
 
