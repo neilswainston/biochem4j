@@ -1,6 +1,7 @@
 /.project
 /.pydevproject
-/neo4j/data/*
+/neo4j/input/nodes
+/neo4j/input/rels
 **/*.log
 **/*.pyc
 **/.DS_Store
