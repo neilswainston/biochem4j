@@ -13,7 +13,6 @@ import os
 from shutil import rmtree
 
 import pandas as pd
-from synbiochem.utils import neo4j_utils
 
 
 class Writer(object):
@@ -39,8 +38,6 @@ class Writer(object):
             return None
 
         df = pd.DataFrame(nodes)
-        # df = neo4j_utils.type_df(df)
-
         filename = os.path.join(self.__nodes_dir, group + '.csv')
         df.to_csv(filename, index=False, encoding='utf-8', sep=separator)
 
@@ -53,15 +50,17 @@ class Writer(object):
 
         columns = [':START_ID(' + group_start + ')',
                    ':TYPE',
-                   ':END_ID(' + group_end + ')',
-                   'PROPERTIES']
+                   ':END_ID(' + group_end + ')']
+
+        if len(rels[0]) > 3:
+            columns.append('PROPERTIES')
 
         df = pd.DataFrame(rels, columns=columns)
-        props_df = pd.DataFrame(list(df['PROPERTIES']))
-        df.drop('PROPERTIES', axis=1, inplace=True)
 
-        # df = neo4j_utils.type_df(df.join(props_df))
-        df = df.join(props_df)
+        if len(rels[0]) > 3:
+            props_df = pd.DataFrame(list(df['PROPERTIES']))
+            df.drop('PROPERTIES', axis=1, inplace=True)
+            df = df.join(props_df)
 
         filename = os.path.join(self.__rels_dir,
                                 group_start + '_' + group_end + '.csv')
