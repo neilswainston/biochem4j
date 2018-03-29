@@ -12,9 +12,8 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 import os
 from shutil import rmtree
 
-from synbiochem.utils import neo4j_utils
-
 import pandas as pd
+from synbiochem.utils import neo4j_utils
 
 
 class Writer(object):
@@ -55,10 +54,14 @@ class Writer(object):
 
         columns = [':START_ID(' + group_start + ')',
                    ':TYPE',
-                   ':END_ID(' + group_end + ')']
+                   ':END_ID(' + group_end + ')',
+                   'PROPERTIES']
 
-        dfs = neo4j_utils.type_dfs([pd.DataFrame(rels, columns=columns)],
-                                   array_delimiter)
+        df = pd.DataFrame(rels, columns=columns)
+        props_df = pd.DataFrame(list(df['PROPERTIES']))
+        df.drop('PROPERTIES', axis=1, inplace=True)
+
+        dfs = neo4j_utils.type_dfs([df.join(props_df)], array_delimiter)
 
         filename = os.path.join(self.__rels_dir,
                                 group_start + '_' + group_end + '.csv')
