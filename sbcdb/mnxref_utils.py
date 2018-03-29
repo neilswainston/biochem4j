@@ -19,9 +19,9 @@ import urllib2
 
 import numpy
 from subliminal import balance
-from synbiochem.utils import chem_utils
 
 from sbcdb import namespace_utils
+from synbiochem.utils import chem_utils
 
 
 _METANETX_URL = 'http://metanetx.org/cgi-bin/mnxget/mnxref/'
@@ -55,8 +55,8 @@ class MnxRefReader(object):
 
     def __read_chem_prop(self):
         '''Read chemical properties and create Nodes.'''
-        chem_prop_keys = ['id', 'name', 'formula', 'charge', 'mass', 'inchi',
-                          'smiles', 'source']
+        chem_prop_keys = ['id', 'name', 'formula', 'charge:float',
+                          'mass:float', 'inchi', 'smiles', 'source']
 
         for values in self.__read_data('chem_prop.tsv'):
             if not values[0].startswith('#'):
@@ -64,8 +64,8 @@ class MnxRefReader(object):
                 values[7] = self.__parse_id(values[7])
                 props = dict(zip(chem_prop_keys, values))
                 props.pop('source')
-                _convert_to_float(props, 'charge')
-                _convert_to_float(props, 'mass')
+                _convert_to_float(props, 'charge:float')
+                _convert_to_float(props, 'mass:float')
                 props = {key: value for key, value in props.iteritems()
                          if value != ''}
                 self.__chem_data[values[0]] = props
@@ -189,7 +189,7 @@ class MnxRefLoader(object):
 
                 reac_def.append([self.__chem_man.get_prop(prt[0], 'formula'),
                                  self.__chem_man.get_prop(prt[0],
-                                                          'charge:int', 0),
+                                                          'charge:float', 0),
                                  prt[1],
                                  chem_id])
 

@@ -17,11 +17,11 @@ import urllib
 __NCBITAXONOMY_URL = 'ftp://ftp.ncbi.nih.gov/pub/taxonomy/taxdump.tar.gz'
 
 
-def load(writer, source=__NCBITAXONOMY_URL):
+def load(writer, array_delimiter, source=__NCBITAXONOMY_URL):
     '''Loads NCBI Taxonomy data.'''
     nodes_filename, names_filename = _get_ncbi_taxonomy_files(source)
-    nodes, rels = _parse_nodes(nodes_filename)
-    _parse_names(nodes, names_filename)
+    nodes, rels = _parse_nodes(nodes_filename, array_delimiter)
+    _parse_names(nodes, names_filename, array_delimiter)
 
     writer.write_nodes(nodes.values(), 'Organism')
     writer.write_rels(rels, 'Organism', 'Organism')
@@ -43,7 +43,7 @@ def _get_ncbi_taxonomy_files(source):
         os.path.join(temp_dir, 'names.dmp')
 
 
-def _parse_nodes(filename, array_delimiter='|'):
+def _parse_nodes(filename, array_delimiter):
     '''Parses nodes file.'''
     nodes = {}
     rels = []
@@ -63,7 +63,7 @@ def _parse_nodes(filename, array_delimiter='|'):
     return nodes, rels
 
 
-def _parse_names(nodes, filename, array_delimiter='|'):
+def _parse_names(nodes, filename, array_delimiter):
     '''Parses names file.'''
 
     with open(filename, 'r') as textfile:

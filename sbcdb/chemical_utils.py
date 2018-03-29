@@ -11,16 +11,17 @@ import math
 import uuid
 
 from libchebipy._chebi_entity import ChebiEntity, ChebiException
-from synbiochem.utils import chem_utils
 
 from sbcdb import namespace_utils as ns_utils
+from synbiochem.utils import chem_utils
 
 
 class ChemicalManager(object):
     '''Class to implement a manager of Chemical data.'''
 
-    def __init__(self):
+    def __init__(self, array_delimiter):
         '''Constructor.'''
+        self.__array_delimiter = array_delimiter
         self.__nodes = {}
         self.__chem_ids = {}
 
@@ -32,11 +33,11 @@ class ChemicalManager(object):
         '''Adds a chemical to the collection of nodes, ensuring uniqueness.'''
         chem_id, chebi_ent = self.__get_chem_id(properties)
 
-        if 'charge' in properties:
-            charge = properties.pop('charge')
+        if 'charge:float' in properties:
+            charge = properties.pop('charge:float')
 
             if not math.isnan(charge):
-                properties['charge:int'] = int(charge)
+                properties['charge:float'] = int(charge)
 
         if chem_id not in self.__nodes:
             properties[':LABEL'] = 'Chemical'
@@ -66,7 +67,8 @@ class ChemicalManager(object):
 
         if chebi_id:
             try:
-                chebi_id, chebi_ent = _get_chebi_data(chebi_id, properties)
+                chebi_id, chebi_ent = _get_chebi_data(chebi_id, properties,
+                                                      self.__array_delimiter)
             except ChebiException, err:
                 properties.pop('chebi')
                 chebi_id = None
@@ -114,7 +116,7 @@ class ChemicalManager(object):
         return new_id, None
 
 
-def _get_chebi_data(chebi_id, properties):
+def _get_chebi_data(chebi_id, properties, array_delimiter):
     '''Gets ChEBI data.'''
     chebi_ent = ChebiEntity(str(chebi_id))
 
@@ -134,7 +136,7 @@ def _get_chebi_data(chebi_id, properties):
         properties['formula'] = formula
 
     if not math.isnan(charge):
-        properties['charge'] = charge
+        properties['charge:float'] = charge
 
     if inchi:
         properties['inchi'] = inchi
@@ -144,8 +146,9 @@ def _get_chebi_data(chebi_id, properties):
 
     properties['name'] = chebi_ent.get_name()
     properties['names:string[]'] = \
-        [name.get_name() for name in chebi_ent.get_names()] + \
-        [chebi_ent.get_name()]
+        array_delimiter.join([name.get_name()
+                              for name in chebi_ent.get_names()] +
+                             [chebi_ent.get_name()])
 
     for db_acc in chebi_ent.get_database_accessions():
         namespace = ns_utils.resolve_namespace(
@@ -160,7 +163,7 @@ def _get_chebi_data(chebi_id, properties):
 def _normalise_mass(properties):
     '''Removes ambiguity in mass values by recalculating according to chemical
     formula.'''
-    properties.pop('mass', None)
+    properties.pop('mass:float', None)
 
     if 'formula' in properties and properties['formula'] is not None:
         mono_mass = chem_utils.get_molecular_mass(properties['formula'])

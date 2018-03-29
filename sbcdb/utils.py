@@ -33,21 +33,20 @@ class Writer(object):
 
         os.makedirs(self.__rels_dir)
 
-    def write_nodes(self, nodes, group, separator=';', array_delimiter='|'):
+    def write_nodes(self, nodes, group, separator=';'):
         '''Writes Nodes to csv file.'''
         if not nodes:
             return None
 
         df = pd.DataFrame(nodes)
-        dfs = neo4j_utils.type_dfs([df], array_delimiter)
+        # df = neo4j_utils.type_df(df)
 
         filename = os.path.join(self.__nodes_dir, group + '.csv')
-        dfs[0].to_csv(filename, index=False, encoding='utf-8', sep=separator)
+        df.to_csv(filename, index=False, encoding='utf-8', sep=separator)
 
         return filename
 
-    def write_rels(self, rels, group_start, group_end, separator=';',
-                   array_delimiter='|'):
+    def write_rels(self, rels, group_start, group_end, separator=';'):
         '''Writes Relationships to csv file.'''
         if not rels:
             return None
@@ -61,10 +60,11 @@ class Writer(object):
         props_df = pd.DataFrame(list(df['PROPERTIES']))
         df.drop('PROPERTIES', axis=1, inplace=True)
 
-        dfs = neo4j_utils.type_dfs([df.join(props_df)], array_delimiter)
+        # df = neo4j_utils.type_df(df.join(props_df))
+        df = df.join(props_df)
 
         filename = os.path.join(self.__rels_dir,
                                 group_start + '_' + group_end + '.csv')
-        dfs[0].to_csv(filename, index=False, encoding='utf-8', sep=separator)
+        df.to_csv(filename, index=False, encoding='utf-8', sep=separator)
 
         return filename
