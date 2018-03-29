@@ -8,7 +8,6 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 @author:  neilswainston
 '''
 import os
-import re
 import sys
 import tarfile
 import tempfile
@@ -44,7 +43,7 @@ def _get_ncbi_taxonomy_files(source):
         os.path.join(temp_dir, 'names.dmp')
 
 
-def _parse_nodes(filename):
+def _parse_nodes(filename, array_delimiter='|'):
     '''Parses nodes file.'''
     nodes = {}
     rels = []
@@ -58,12 +57,13 @@ def _parse_nodes(filename):
                 rels.append([tax_id, 'is_a', tokens[1]])
 
             nodes[tax_id] = {'taxonomy:ID(Organism)': tax_id,
-                             ':LABEL': 'Organism;' + tokens[2]}
+                             ':LABEL':
+                             'Organism' + array_delimiter + tokens[2]}
 
     return nodes, rels
 
 
-def _parse_names(nodes, filename):
+def _parse_names(nodes, filename, array_delimiter='|'):
     '''Parses names file.'''
 
     with open(filename, 'r') as textfile:
@@ -72,15 +72,15 @@ def _parse_names(nodes, filename):
             node = nodes[tokens[0]]
 
             if 'name' not in node:
-                node['name'] = _encode(tokens[1])
+                node['name'] = tokens[1]
                 node['names:string[]'] = set([node['name']])
             else:
-                node['names:string[]'].add(_encode(tokens[1]))
+                node['names:string[]'].add(tokens[1])
 
-
-def _encode(string):
-    '''Encodes string, removing problematic characters.'''
-    return re.sub('[\'\",;]', ' ', string).strip()
+    for _, node in nodes.iteritems():
+        if 'names:string[]' in node:
+            node['names:string[]'] = \
+                array_delimiter.join(node['names:string[]'])
 
 
 def main(argv):

@@ -7,10 +7,14 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 
 @author:  neilswainston
 '''
-from collections import Iterable
-import csv
+# pylint: disable=invalid-name
+# pylint: disable=too-many-arguments
 import os
 from shutil import rmtree
+
+from synbiochem.utils import neo4j_utils
+
+import pandas as pd
 
 
 class Writer(object):
@@ -30,58 +34,34 @@ class Writer(object):
 
         os.makedirs(self.__rels_dir)
 
-    def write_nodes(self, nodes, group):
+    def write_nodes(self, nodes, group, separator=';', array_delimiter='|'):
         '''Writes Nodes to csv file.'''
         if not nodes:
             return None
 
+        df = pd.DataFrame(nodes)
+        dfs = neo4j_utils.type_dfs([df], array_delimiter)
+
         filename = os.path.join(self.__nodes_dir, group + '.csv')
-
-        nodes = [{key: _get_value(value) for key, value in node.iteritems()}
-                 for node in nodes]
-
-        with open(filename, 'w') as node_file:
-            dict_writer = csv.DictWriter(
-                node_file, list(set().union(*(d.keys() for d in nodes))),
-                restval=None)
-            dict_writer.writeheader()
-            dict_writer.writerows(nodes)
+        dfs[0].to_csv(filename, index=False, encoding='utf-8', sep=separator)
 
         return filename
 
-    def write_rels(self, rels, group_start, group_end):
+    def write_rels(self, rels, group_start, group_end, separator=';',
+                   array_delimiter='|'):
         '''Writes Relationships to csv file.'''
         if not rels:
             return None
 
+        columns = [':START_ID(' + group_start + ')',
+                   ':TYPE',
+                   ':END_ID(' + group_end + ')']
+
+        dfs = neo4j_utils.type_dfs([pd.DataFrame(rels, columns=columns)],
+                                   array_delimiter)
+
         filename = os.path.join(self.__rels_dir,
                                 group_start + '_' + group_end + '.csv')
-
-        all_keys = [x.keys()
-                    for rel in rels for x in rel if isinstance(x, dict)]
-        keys = list(set([x for sub in all_keys for x in sub]))
-
-        with open(filename, 'w') as textfile:
-            textfile.write(','.join([':START_ID(' + group_start + ')',
-                                     ':TYPE',
-                                     ':END_ID(' + group_end + ')'] + keys) +
-                           '\n')
-
-            for rel in rels:
-                textfile.write(','.join([_get_value(val)
-                                         for val in rel[:3]] +
-                                        [_get_value(rel[3][key])
-                                         for key in keys]) + '\n')
+        dfs[0].to_csv(filename, index=False, encoding='utf-8', sep=separator)
 
         return filename
-
-
-def _get_value(value):
-    '''Formats arrays as "x;y;x"'''
-    if isinstance(value, Iterable):
-        if not isinstance(value, str) and not isinstance(value, unicode):
-            return ';'.join([_get_value(val) for val in value])
-
-        return value.encode('utf-8')
-
-    return str(value)
