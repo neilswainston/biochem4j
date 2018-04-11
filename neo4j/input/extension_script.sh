@@ -12,6 +12,7 @@ rels_str=`echo $rels| sed "s/ / --relationships /g"`
 	--delimiter ";" \
 	--array-delimiter "|" \
 	--multiline-fields true
-	
+
+sed -i 's/dbms.security.auth_enabled=true/dbms.security.auth_enabled=false/g' conf/neo4j.conf
 sed -i 's/#dbms.read_only=false/dbms.read_only=true/g' conf/neo4j.conf
 sed -i 's/#dbms.connector.http.address/dbms.connector.http.address/g' conf/neo4j.conf
