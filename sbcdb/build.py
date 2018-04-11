@@ -36,7 +36,7 @@ def build_csv(dest_dir, array_delimiter, num_threads):
 
     # Get Spectrum data:
     print 'Parsing spectrum data'
-    # spectra_utils.load(writer, chem_man)
+    spectra_utils.load(writer, chem_man, array_delimiter=array_delimiter)
 
     chem_man.write_files(writer)
 
