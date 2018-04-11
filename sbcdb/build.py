@@ -10,7 +10,7 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 import multiprocessing
 import sys
 
-from sbcdb import chebi_utils, chemical_utils, kegg_utils, mnxref_utils, \
+from sbcdb import chebi_utils, chemical_utils, mnxref_utils, \
     ncbi_taxonomy_utils, reaction_utils, rhea_utils, spectra_utils, utils
 
 
@@ -41,8 +41,8 @@ def build_csv(dest_dir, array_delimiter, num_threads):
     chem_man.write_files(writer)
 
     # Get Reaction / Enzyme / Organism data:
-    print 'Parsing KEGG'
-    kegg_utils.load(reac_man, num_threads=num_threads)
+    # print 'Parsing KEGG'
+    # kegg_utils.load(reac_man, num_threads=num_threads)
 
     print 'Parsing Rhea'
     rhea_utils.load(reac_man, num_threads=num_threads)
