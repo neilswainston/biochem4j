@@ -38,6 +38,8 @@ class Writer(object):
             return None
 
         df = pd.DataFrame(nodes)
+        df.dropna(axis=1, how='all', inplace=True)
+
         filename = os.path.join(self.__nodes_dir, group + '.csv')
         df.to_csv(filename, index=False, encoding='utf-8', sep=separator)
 

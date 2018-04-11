@@ -7,10 +7,7 @@ To view a copy of this license, visit <http://opensource.org/licenses/MIT/>.
 
 @author:  neilswainston
 '''
-from decimal import Decimal
-import json
 import os
-import sys
 import tempfile
 from urllib import urlretrieve
 import zipfile
@@ -28,12 +25,13 @@ _NAME_MAP = {'kegg': 'kegg.compound',
              'total exact mass': 'monoisotopic_mass:float'}
 
 
-def load(writer, chem_manager, url=__MONA_URL, filename=__MONA_FILENAME):
+def load(writer, chem_manager,
+         array_delimiter='|', url=__MONA_URL, filename=__MONA_FILENAME):
     '''Build Spectrum nodes and relationships.'''
     nodes = []
     rels = []
 
-    records = _parse(_get_file(url, filename))
+    records = _parse(_get_file(url, filename), array_delimiter)
 
     for record in records:
         chem_id, _ = chem_manager.add_chemical(record['chemical'])
@@ -44,7 +42,7 @@ def load(writer, chem_manager, url=__MONA_URL, filename=__MONA_FILENAME):
         [writer.write_rels(rels, 'Chemical', 'Spectrum')]
 
 
-def _parse(filename):
+def _parse(filename, array_delimiter):
     '''Parses MoNA json file.'''
     records = []
     record = {'chemical': {'names:string[]': []},
@@ -71,13 +69,15 @@ def _parse(filename):
         elif prefix == 'item.id':
             record['spectrum']['id:ID(Spectrum)'] = value
         elif prefix == 'item.metaData.item.value':
-            _parse_item_metadata(name, value, record)
+            record['spectrum'][name] = value
             name = None
         elif prefix == 'item.spectrum':
             values = [float(val) for term in value.split()
                       for val in term.split(':')]
-            record['spectrum']['m/z:float[]'] = values[0::2]
-            record['spectrum']['intensity:float[]'] = values[1::2]
+            record['spectrum']['m/z:float[]'] = \
+                array_delimiter.join(map(str, values[0::2]))
+            record['spectrum']['I:float[]'] = \
+                array_delimiter.join(map(str, values[1::2]))
         elif prefix == 'item.tags.item.text':
             record['spectrum']['tags:string[]'].append(value)
         elif prefix == 'item' and typ == 'end_map':
@@ -110,45 +110,12 @@ def _parse_compound_metadata(name, value, record):
     if name == 'chebi' and isinstance(value, unicode):
         value = value.replace('CHEBI:', '').split()[0]
 
-    if name != 'monoisotopic_mass:float':
-        name = name.replace(':', '_')
-
-    key = name + ':float' if isinstance(value, Decimal) else name
-    value = float(value) if isinstance(value, Decimal) else value
-    record['chemical'][key] = value
-
-
-def _parse_item_metadata(name, value, record):
-    '''Parses item metadata.'''
-    try:
-        if name in ['retention time', 'retention index', 'derivative mw',
-                    'derivative mass', 'colenergy2', 'collision energy',
-                    'exact mass', 'exactmass', 'full scan fragment ion peak',
-                    'isolation width', 'precursor m/z']:
-            tokens = str(value).split()
-            value = Decimal(float(tokens[0]))
-
-        name = name.replace(':', '_')
-
-        key = name + \
-            ':float' if isinstance(value, Decimal) else name
-        value = float(value) if isinstance(value, Decimal) else \
-            value
-        record['spectrum'][key] = value
-    except ValueError, err:
-        print err
+    record['chemical'][_normalise_name(name)] = value
 
 
 def _normalise_name(name):
     '''Normalises name in name:value pairs.'''
-    return _NAME_MAP.get(name, name)
+    if name in _NAME_MAP:
+        return _NAME_MAP[name]
 
-
-def main(args):
-    '''main method'''
-    records = _parse(args[0])
-    print json.dumps(records, indent=4, sort_keys=True)
-
-
-if __name__ == '__main__':
-    main(sys.argv[1:])
+    return name.replace(':', '_')
