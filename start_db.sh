@@ -6,6 +6,7 @@ docker run \
 --detach \
 --user neo4j \
 --publish=80:7474 \
+--publish=443:7473 \
 --publish=7687:7687 \
 --volume=$DIR/neo4j/input:/input \
 --env=NEO4J_AUTH=none \
