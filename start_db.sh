@@ -11,4 +11,4 @@ docker run \
 --env=NEO4J_AUTH=none \
 --env=NEO4J_dbms_read__only=true \
 --env=EXTENSION_SCRIPT=/input/extension_script.sh \
-neo4j:3.2
+neo4j
